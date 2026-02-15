@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev":"nodemon src/index.js"
+    "dev": "nodemon src/index.js"
   },
   "keywords": [
     "node",
@@ -14,7 +14,8 @@
   ],
   "author": "Archisman2006",
   "license": "ISC",
-  "dependencies": {
-    "nodemon": "^3.1.11"
+  "devDependencies": {
+    "nodemon": "^3.1.11",
+    "prettier": "^3.8.1"
   }
 }
