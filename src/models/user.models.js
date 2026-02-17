@@ -4,16 +4,16 @@ import jwt from 'jsonwebtoken'
 const userSchema=new mongoose.Schema(
     {
         userName:{
-            type:String, required,unique,lowercase,trim,index
+            type:String, required:true,unique:true,lowercase:true,trim:true,index:true
         },
         email:{
-            type:String, required,unique,lowercase,trim
+            type:String, required:true,unique:true,lowercase:true,trim:true
         },
         fullName:{
-            type:String, required,trim
+            type:String, required:true,trim:true
         },
         avatar:{
-            type:String, required,unique,lowercase,trim
+            type:String, required:true,unique:true,lowercase:true,trim:true
         },
         coverImage:{
             type:String
