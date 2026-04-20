@@ -4,27 +4,35 @@ import {User} from '../models/user.models.js'
 import {uploadOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 const registerUser=asynchandler(async (req,res)=>{
+    console.log(req.body); console.log("Jadavpur");
+    console.log(req.files);
+    const body = req.body || {};
     // get user details from frontend
-    const {userName,email,fullName,password}=req.body
+    const {userName,email,fullName,password}=body
     console.log("email: "+email);
     //validation
     if([userName,email,fullName].some((i)=>i?.trim()==="")) throw new ApiError(400,"All fields are Required");
     //check if user already exists
-    const userExists=User.findOne({
+    const userExists=await User.findOne({
         $or:[{userName},{email}]
     })
     if(userExists) throw new ApiError(409,"User Already Exists");
     //check for images,avatar
-    const avatar_localpath=req.files?.avatar[0]?.path;
-    const coverImage_localpath=req.files?.coverImage[0]?.path;
+    const avatar_localpath=req.files?.avatar?.[0]?.path; 
+    //console.log(avatar_localpath);
+    let coverImage_localpath=null;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length>0){
+        coverImage_localpath=req.files.coverImage[0].path;
+    }
     if(!avatar_localpath) throw new ApiError(400,"Avatar is required");
     //upload to cloudinary
     const avatar=await uploadOnCloudinary(avatar_localpath);
-    const coverImage=await uploadOnCloudinary(coverImage_localpath);
-    if(!avatar) throw new ApiError(400,"Avatar is required");
+    const coverImage=(coverImage_localpath==null)?null:await uploadOnCloudinary(coverImage_localpath);
+    if(!avatar) throw new ApiError(400,"Avatar is required. 111");
     //create user object
-    const user=User.create({fullName,avatar:avatar.url,coverImage:coverImage?.url||"",email,password,userName:userName.toLowerCase()});
+    const user=await User.create({fullName,avatar:avatar.url,coverImage:coverImage?.url||"",email,password,userName:userName.toLowerCase()});
     //remove password and refresh token field from response
+    //console.log(User);
     const createdUser=await User.findById(user._id).select("-password -refreshToken");
     //check for user creation
     if(!createdUser){
