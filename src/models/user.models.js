@@ -32,10 +32,10 @@ const userSchema=new mongoose.Schema(
     {timestamps:true}
 )
 userSchema.pre("save",async function (next){
-    if(!this.isModified("password")) {next(); return;}
+    if(!this.isModified("password")) { return;}
     this.password=await bcrypt.hash(this.password,10);
 })
-userSchema.methods.isPasswordCorrect=async (password)=>{
+userSchema.methods.isPasswordCorrect=async function(password){
     return await bcrypt.compare(password,this.password);
 } 
 userSchema.methods.generateAccessToken=function(){

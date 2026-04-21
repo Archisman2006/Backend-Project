@@ -3,7 +3,6 @@ import {ApiError} from '../utils/ApiError.js'
 import {User} from '../models/user.models.js'
 import {uploadOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
-import { use } from 'react'
 const getAccessAndRefreshTokens=async (userid,user)=>{
     //const user=User.findById(userid);
     const accessToken=user.generateAccessToken();
@@ -64,6 +63,8 @@ const loginUser=asynchandler(async (req,res)=>{
     if(!valid) throw new ApiError(401,"Password is Invalid");
     //generate access and refresh token
     const {accessToken,refreshToken}=await getAccessAndRefreshTokens(user._id,user);
+    const loggedInUser=await User.findById(user._id)
+    .select("-password -refreshToken");
     const options={
         httpOnly: true,secure:true
     };
@@ -74,7 +75,7 @@ const loginUser=asynchandler(async (req,res)=>{
         new ApiResponse(
             200,
             {
-                user:user.select("-password -refreshToken")
+                user:loggedInUser
             },
             "User logged in Successfully"
         )
