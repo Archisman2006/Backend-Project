@@ -211,7 +211,55 @@ const updateCoverImage=asynchandler(async (req,res)=>{
         new ApiResponse(200,{user},"Cover image updated Successfully")
     )
 })
+const getChannelProfile=asynchandler(async (req,res)=>{
+    const {userName}=req.params
+    if(!userName) throw new ApiError(401,"Username not provided");
+    const channel=await User.aggregate({
+        $match:{userName:userName}
+    },{
+        $lookup:{
+            from:'subscriptions',
+            localField:'_id',
+            foreignField:'channel',
+            as:'subscribers'
+        }
+    },{
+        $lookup:{
+            from:'subscriptions',
+            localField:'_id',
+            foreignField:'subscriber',
+            as:'subscribedTo'
+        }
+    },{
+        $addFields:{
+            subscribersCount:{
+                $size: "$subscribers"
+            },
+            subscribedToCount:{
+                $size:"$subscribedTo"
+            },
+            isSubscribed:{
+                $cond: {
+                    if:{$in:[req.user._id,'$subscribers.subscriber']},
+                    then:true,else:false
+                }
+            }
+        }
+    },{
+        $project:{
+            userName:1,
+            fullName:1,
+            avatar:1,
+            coverImage:1,
+            subscribersCount:1,
+            subscribedToCount:1,
+            isSubscribed:1
+        }
+    }
+);
+})
+
 export {registerUser,loginUser,logoutUser,refreshAccessToken,
     changeCurrentPassword,getCurrentUser,updateAccountDetails,updateAvatar,
-    updateCoverImage
+    updateCoverImage,getChannelProfile
 }
