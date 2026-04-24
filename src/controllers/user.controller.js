@@ -14,12 +14,9 @@ const getAccessAndRefreshTokens=async (userid,user)=>{
     return {accessToken,refreshToken};
 }
 const registerUser=asynchandler(async (req,res)=>{
-    console.log(req.body); console.log("Jadavpur");
-    console.log(req.files);
     const body = req.body || {};
     // get user details from frontend
     const {userName,email,fullName,password}=body
-    console.log("email: "+email);
     //validation
     if([userName,email,fullName].some((i)=>i?.trim()==="")) throw new ApiError(400,"All fields are Required");
     //check if user already exists
@@ -106,7 +103,7 @@ const logoutUser=asynchandler(async (req,res)=>{
         200,{},"User Logged Out"
     ))
 })
-const refreshAccessToken=asynchandler((req,res)=>{
+const refreshAccessToken=asynchandler(async (req,res)=>{
     const incomingRefreshToken=req.cookies.refreshToken || req.body.refreshToken;
     if(!incomingRefreshToken){
         throw new ApiError(401,"Unauthorized Access Denied");
@@ -135,7 +132,7 @@ const refreshAccessToken=asynchandler((req,res)=>{
         )
     )
 })
-const changeCurrentPassword=asynchandler((req,res)=>{
+const changeCurrentPassword=asynchandler(async (req,res)=>{
     const {oldPassword,newPassword}=req.body;
     const user=await User.findById(req.user._id);
     const isPasswordCorrect=user.isPasswordCorrect(oldPassword)

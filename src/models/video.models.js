@@ -7,16 +7,16 @@ const videoSchema=new mongoose.Schema(
             type:String,required:true
         },
         thumbnail:{
-            type:String,required:true
+            type:String
         },
         title:{
             type:String,required:true
         },
         description:{
-            type:String,required:true
+            type:String
         },
         duration:{
-            type:String,required:true
+            type:Number,required:true
         },
         views:{
             type:Number,required:true, default:0

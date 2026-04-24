@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import fs from "fs"
 import dotenv from 'dotenv';
+import { ApiError } from './ApiError.js';
 
 // make sure environment variables are loaded as soon as this module is required
 dotenv.config();
@@ -40,6 +41,38 @@ const uploadOnCloudinary=async (localFilePath)=>{
         return null; 
     }
 }
-export {uploadOnCloudinary}
+const getPublicIdFromCloudinaryURL=(fileUrl)=>{
+    try {
+        const parsedUrl=new URL(fileUrl)
+        const pathParts=parsedUrl.pathname.split('/').filter(Boolean)
+        const uploadIndex = pathParts.findIndex((part) => part === "upload");
+        if (uploadIndex === -1) return null;
+        const publicIdParts = pathParts.slice(uploadIndex + 1);
+        if (publicIdParts[0] && /^v\d+$/.test(publicIdParts[0])){ 
+            publicIdParts.shift();
+        }
+        if (!publicIdParts.length) return null;
+        const lastIndex = publicIdParts.length - 1;
+        publicIdParts[lastIndex] = publicIdParts[lastIndex].replace(/.[^/.]+$/, "");
+        return publicIdParts.join("/");
+    } catch (error) {
+        throw new ApiError(401,"Error occured while fetching public id from cloudinary")
+    }
+
+}
+
+const deleteFromCloudinary= async (fileUrl,resourceType="auto")=>{
+    try {
+        if(!fileUrl) return null;
+        const publicId=getPublicIdFromCloudinaryURL(fileUrl);
+        if(!publicId){
+            throw new ApiError(400,"Could not extract cloudinary url from URL.");
+        }
+        return await cloudinary.uploader.destroy(publicId,{resource_type});
+    } catch (error) {
+        throw new ApiError("Error while deleting file from cloudinary");
+    }
+}
+export {uploadOnCloudinary,deleteFromCloudinary}
 
 

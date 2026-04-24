@@ -30,14 +30,14 @@ router.route("/register").post(
     router.route("/current-user").get(
         VerifyJWT,getCurrentUser
     )
-    router.route("update-details").patch(
+    router.route("/update-details").patch(
         VerifyJWT,updateAccountDetails
     )
     router.route("/update-avatar").patch(
-        VerifyJWT,updateAvatar
+        VerifyJWT,upload.single("avatar"),updateAvatar
     )
     router.route("/update-coverImage").patch(
-        VerifyJWT,updateCoverImage
+        VerifyJWT,upload.single("coverImage"),updateCoverImage
     )
     router.route("/channel/:userName").get(
         VerifyJWT,getChannelProfile
