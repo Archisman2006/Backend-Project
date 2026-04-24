@@ -5,6 +5,7 @@ import { asynchandler } from '../utils/asyncHandler.js'
 import {ApiResponse} from '../utils/ApiResponse.js'
 import {ApiError} from '../utils/ApiError.js'
 import { deleteFromCloudinary, uploadOnCloudinary } from '../utils/cloudinary.js'
+import { VideoView } from '../models/videoviews.model.js'
 const getAllVideos=asynchandler(async (req,res)=>{
     const {page=1,limit=10,query,sortBy="createdAt",sortType="desc",userId}=req.query;
     const parsedPage=Math.max(parseInt(page,10)|| 1,1)
@@ -112,6 +113,27 @@ const getVideoByID=asynchandler(async (req,res)=>{
         new ApiResponse(200,video,"Video fetched successfully")
     )
 })
+const watchVideo=asynchandler(async (req,res)=>{
+    const {videoId}=req.params;
+    if(!mongoose.Types.ObjectId.isValid(videoId))
+        throw new ApiError(400, "Invalid video ID");
+    const video=await Video.findById(videoId);
+    if(!video) throw new ApiError(400,"This Video Isn't Available");
+    const result=await VideoView.updateOne(
+        {viewer:req.user._id,video:videoId},
+        {$setOnInsert:{viewer:req.user._id,video:videoId}},{upsert:true}
+    )
+    let updatedVideo=video;
+    const viewedNow=(result.upsertedCount === 1)
+    if (viewedNow) {
+        updatedVideo=await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } },{new:true})
+    }
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200,{viewedNow,updatedVideo},"viewed successfully")
+    )
+})
 const updateVideo=asynchandler(async (req,res)=>{
     const {videoId}=req.params;
     const {title,description,isPublished}=req.body;
@@ -156,5 +178,4 @@ const deleteVideo=asynchandler(async (req,res)=>{
         new ApiResponse(200,{},"Video Deleted Successfully")
     )
 })
-
 export {getAllVideos,publishVideo,getVideoByID,updateVideo};
