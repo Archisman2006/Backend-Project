@@ -1,7 +1,7 @@
 import {asynchandler} from '../utils/asyncHandler.js'
 import {ApiError} from '../utils/ApiError.js'
 import {User} from '../models/user.models.js'
-import {uploadOnCloudinary} from '../utils/cloudinary.js'
+import {deleteFromCloudinary, uploadOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
@@ -186,7 +186,7 @@ const updateAvatar=asynchandler(async (req,res)=>{
         },
         {new:true}
     ).select("-password -refreshToken")
-
+    await deleteFromCloudinary(avatar.url,'image');
     return res.status(200)
     .json(
         new ApiResponse(200,{user},"Avatar updated successfully")
@@ -204,6 +204,7 @@ const updateCoverImage=asynchandler(async (req,res)=>{
         },
         {new:true}
     ).select("-password -refreshToken")
+    await deleteFromCloudinary(coverImage.url,'image');
     return res.status(200)
     .json(
         new ApiResponse(200,{user},"Cover image updated Successfully")
