@@ -212,7 +212,7 @@ const updateCoverImage=asynchandler(async (req,res)=>{
 const getChannelProfile=asynchandler(async (req,res)=>{
     const {userName}=req.params
     if(!userName) throw new ApiError(401,"Username not provided");
-    const channel=await User.aggregate({
+    const channel=await User.aggregate([{
         $match:{userName:userName}
     },{
         $lookup:{
@@ -254,6 +254,7 @@ const getChannelProfile=asynchandler(async (req,res)=>{
             isSubscribed:1
         }
     }
+    ]
 );
 })
 const getWatchHistory=asynchandler(async (req,res)=>{
@@ -299,7 +300,7 @@ const getWatchHistory=asynchandler(async (req,res)=>{
     )
     return res.status(200)
     .json(
-        new ApiResponse(200, user[0].watchHistory,"Watch History retrived successfully")    
+        new ApiResponse(200, user[0].watchHistory,"Watch History retrieved successfully")    
     )
 })
 export {registerUser,loginUser,logoutUser,refreshAccessToken,
