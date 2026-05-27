@@ -13,6 +13,12 @@ const playlistSchema=mongoose.Schema(
         }],
         owner:{
             type:mongoose.Schema.Types.ObjectId, ref:'User' ,required:true
+        },
+        visibility:{
+            type:String,
+            enum:['public','private','unlisted'],
+            default:'private',
+            lowercase:true,
         }
     },{
         timestamps:true
