@@ -179,17 +179,18 @@ const updateAvatar=asynchandler(async (req,res)=>{
     if(!localpath) throw new ApiError(400,"File path is required");
     const avatar=await uploadOnCloudinary(localpath);
     if(!avatar) throw new ApiError(400,"avatar is invalid");
-    const user=await User.findByIdAndUpdate(
+    const user=await User.findById(req.user._id);
+    const newUser=await User.findByIdAndUpdate(
         req.user._id,
         {
             $set:{avatar:avatar.url}
         },
         {new:true}
     ).select("-password -refreshToken")
-    await deleteFromCloudinary(avatar.url,'image');
+    await deleteFromCloudinary(user.avatar,'image');
     return res.status(200)
     .json(
-        new ApiResponse(200,{user},"Avatar updated successfully")
+        new ApiResponse(200,{newUser},"Avatar updated successfully")
     )
 })
 const updateCoverImage=asynchandler(async (req,res)=>{
@@ -197,17 +198,20 @@ const updateCoverImage=asynchandler(async (req,res)=>{
     if(!localpath) throw new ApiError(400,"file path is required")
     const coverImage=await uploadOnCloudinary(localpath);
     if(!coverImage) throw new ApiError(400,"cover image is invalid");
-    const user=await User.findByIdAndUpdate(
+    const user=await User.findById(req.user._id);
+    const newUser= await User.findByIdAndUpdate(
         req.user._id,
         {
             $set:{coverImage}
         },
         {new:true}
     ).select("-password -refreshToken")
-    await deleteFromCloudinary(coverImage.url,'image');
+    if(user.coverImage){
+        await deleteFromCloudinary(user.coverImage,'image');
+    }
     return res.status(200)
     .json(
-        new ApiResponse(200,{user},"Cover image updated Successfully")
+        new ApiResponse(200,{newUser},"Cover image updated Successfully")
     )
 })
 const getChannelProfile=asynchandler(async (req,res)=>{
