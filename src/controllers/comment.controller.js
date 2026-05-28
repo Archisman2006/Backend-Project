@@ -88,7 +88,7 @@ const getVideoComments=asynchandler(async (req,res)=>{
             }
         }
     ]
-    const aggregate=mongoose.aggregate(pipeline);
+    const aggregate=Comment.aggregate(pipeline);
     const comments= await Comment.aggregatePaginate(aggregate,{page:parsedPage,limit:parsedLimit})
     return res
     .status(200)
@@ -202,3 +202,7 @@ const deleteTweetComment=asynchandler(async (req,res)=>{
         new ApiResponse(200,{},"Comment deleted Successfully")
     )
 })
+export {
+    getVideoComments,addTweetComment,updateVideoComment,deleteVideoComment,addTweetComment,
+    updateTweetComment,deleteTweetComment
+}
