@@ -10,5 +10,13 @@ const storage = multer.diskStorage({
     cb(null,file.originalname)
     }
 })
-
-export const upload = multer({ storage: storage })
+const fileFilter=(req,file,cb)=>{
+    const isVideo=file.fieldname==="videoFile";
+    const isImage=file.fieldname==="thumbnail" || file.fieldname==="image";
+    const videoTypes=["video/mp4","video/webm","video/quicktime"];
+    const imageTypes=["image/jpeg","image/png","image/webp"];
+    if(isVideo && videoTypes.includes(file.mimetype)) return cb(null,true)
+    if(isImage && imageTypes.includes(file.mimetype)) return cb(null,true)
+    cb(new Error("invalid file type for field"+ file.fieldname),false);
+};
+export const upload = multer({ storage: storage,fileFilter})
