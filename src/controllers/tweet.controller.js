@@ -8,11 +8,11 @@ import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js
 
 const createTweet=asynchandler(async (req,res)=>{
     const {content}=req.body;
-    const {image_localPath}=req?.files?.image?.[0];
-    if(!content && !image_localPath) throw new ApiError(401,"empty content and image provided");
+    const image_localPath=req?.file.path;
+    if(!content) throw new ApiError(401,"empty content provided");
     const image=(image_localPath==null)?null:await uploadOnCloudinary(image_localPath);
-    const tweet=await Tweet.create({owner:req.user._id,content,image:image.url});
-    if(!twwet) throw new ApiError(402,"Tweet could not be posted");
+    const tweet=await Tweet.create({owner:req.user._id,content,image:image?.url});
+    if(!tweet) throw new ApiError(402,"Tweet could not be posted");
     return res.status(200).json(
         new ApiResponse(200,tweet,"Tweet successfully published")
     );
@@ -22,7 +22,7 @@ const getAllTweets=asynchandler(async (req,res)=>{
     const parsedPage=Math.max(parseInt(page,10)|| 1,1)
     const parsedLimit=Math.min(Math.max(parseInt(limit,10) || 10,1),50)
     const safeSortBy="createdAt";
-    const safeSortOrder=String.sortType.toLowerCase()==="asc"?1:-1;
+    const safeSortOrder=String(sortType)?.toLowerCase()==="asc"?1:-1;
     const matchStage={};
     if(userId){
         if(mongoose.Types.ObjectId.isValid(userId)) {
@@ -35,7 +35,7 @@ const getAllTweets=asynchandler(async (req,res)=>{
     const pipeline=[
         {$match:matchStage},
         {$sort:
-            {safeSortBy:[safeSortOrder]}
+            {[safeSortBy]:safeSortOrder}
         },{
             $lookup:{
                 from:'users',
@@ -83,21 +83,20 @@ const updateTweet=asynchandler(async (req,res)=>{
     if(req.file){
         const image=uploadOnCloudinary(req.file.path);
         if(!image) throw new ApiError(400,"New Image could not be uploaded to cloudinary");
-        updateData.image=image;
+        updateData.image=image.url;
     }
     else if(content==null) throw new ApiError(400,"Empty content and image provided");
     const tweet=await Tweet.findById(tweetId);
     if(!tweet) throw new ApiError(404,"tweet not found")
     const newTweet=await Tweet.findByIdAndUpdate(
+        tweetId,
         {
-            tweetId
-        },{
             $set: updateData
         },{
             new:true
         }
     )
-    if(req.file && user.image){
+    if(req.file && tweet.image){
         await deleteFromCloudinary(tweet.image,'image')
     }
     return res.status(200).json(
