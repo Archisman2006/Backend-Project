@@ -292,6 +292,6 @@ const deleteTweetComment=asynchandler(async (req,res)=>{
     )
 })
 export {
-    getVideoComments,addTweetComment,updateVideoComment,deleteVideoComment,addTweetComment,
+    getVideoComments,addTweetComment,updateVideoComment,deleteVideoComment,
     updateTweetComment,deleteTweetComment,addVideoComment,getTweetComments
 }
