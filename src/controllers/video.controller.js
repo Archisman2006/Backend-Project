@@ -89,12 +89,12 @@ const publishVideo=asynchandler(async (req,res)=>{
     if(!videoFile_localpath) throw new ApiError(401,"Video File is Missing");
     const videoFile=await uploadOnCloudinary(videoFile_localpath);
     if(!videoFile) throw new ApiError(401,'video file could not be uploaded.');
-    const thumbnail_localpath=null;
+    let thumbnail_localpath=null;
     if(req.files && Array.isArray(req.files.thumbnail) && req.files.thumbnail.length>0)
         thumbnail_localpath=req.files?.thumbnail?.[0]?.path;
     const thumbnail=(thumbnail_localpath==null)?null:await uploadOnCloudinary(thumbnail_localpath);
-    const video= await Video.create({videoFile:videoFile.url,thumbnail,title,description,duration:videoFile.duration,owner:new mongoose.Types.ObjectId(req.user._id)});
-    if(!video) throw new ApiError(400,'Video Upload Failed.');
+    const video= await Video.create({videoFile:videoFile.url,thumbnail:thumbnail?.url,title,description,duration:videoFile.duration,owner:new mongoose.Types.ObjectId(req.user._id)});
+    if(!video) throw new ApiError(500,'Video Upload Failed.');
     return res.
     status(200)
     .json(
@@ -145,9 +145,8 @@ const updateVideo=asynchandler(async (req,res)=>{
     }
     if(!title) throw new ApiError(401,"title is required")
     const video=await Video.findByIdAndUpdate(
+        videoId,
         {
-            videoId
-        },{
             $set:updateData
         },{
             new:true
