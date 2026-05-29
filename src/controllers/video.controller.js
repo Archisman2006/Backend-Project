@@ -178,4 +178,4 @@ const deleteVideo=asynchandler(async (req,res)=>{
         new ApiResponse(200,{},"Video Deleted Successfully")
     )
 })
-export {getAllVideos,publishVideo,getVideoByID,updateVideo};
+export {getAllVideos,publishVideo,getVideoByID,watchVideo,updateVideo,deleteVideo};
