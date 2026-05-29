@@ -68,7 +68,7 @@ const deleteFromCloudinary= async (fileUrl,resourceType="auto")=>{
         if(!publicId){
             throw new ApiError(400,"Could not extract cloudinary url from URL.");
         }
-        return await cloudinary.uploader.destroy(publicId,{resource_type});
+        return await cloudinary.uploader.destroy(publicId,{resourceType});
     } catch (error) {
         throw new ApiError("Error while deleting file from cloudinary");
     }

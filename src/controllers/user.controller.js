@@ -108,7 +108,8 @@ const refreshAccessToken=asynchandler(async (req,res)=>{
     if(!incomingRefreshToken){
         throw new ApiError(401,"Unauthorized Access Denied");
     }
-    const decodedToken=jwt.verify(incomingRefreshToken,REFRESH_TOKEN_SECRET);
+    const decodedToken=jwt.verify(incomingRefreshToken,
+        process.env.REFRESH_TOKEN_SECRET);
     const user=await User.findById(decodedToken?._id);
     if(!user){
         throw new ApiError(400,"Invalid refresh token");
@@ -135,12 +136,12 @@ const refreshAccessToken=asynchandler(async (req,res)=>{
 const changeCurrentPassword=asynchandler(async (req,res)=>{
     const {oldPassword,newPassword}=req.body;
     const user=await User.findById(req.user._id);
-    const isPasswordCorrect=user.isPasswordCorrect(oldPassword)
+    const isPasswordCorrect=await user.isPasswordCorrect(oldPassword)
     if(!isPasswordCorrect){
-        throw new ApiError(400,"Password is wrong");
+        throw new ApiError(401,"Password is wrong");
     }
     user.password=newPassword;
-    user.save({validateBeforeSave:false});
+    await user.save({validateBeforeSave:false});
     return res.status(200)
     .json(new ApiResponse(
         200,{},"Password Changed successfully."
@@ -202,7 +203,7 @@ const updateCoverImage=asynchandler(async (req,res)=>{
     const newUser= await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set:{coverImage}
+            $set:{coverImage:coverImage.url}
         },
         {new:true}
     ).select("-password -refreshToken")
@@ -261,6 +262,9 @@ const getChannelProfile=asynchandler(async (req,res)=>{
     }
     ]
 );
+return res.status(200).json(
+    new ApiResponse(200,channel,"Channel profile retrieved")
+)
 })
 const getWatchHistory=asynchandler(async (req,res)=>{
     const user=await User.aggregate([
