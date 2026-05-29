@@ -7,6 +7,6 @@ router.use(VerifyJWT);
 router.route('/').post(createPlaylist).get(getAllPlaylists)
 router.route('/:playlistId').get(getPlaylistById)
 .patch(updatePlaylist).delete(deletePlaylist)
-router.route('/:playlistId/videos/:videoId')
+router.route('/:playlistId/:videoId')
 .post(addVideoToPlaylist).delete(removeVideoFromPlaylist)
 export default router;

@@ -6,11 +6,10 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Playlist } from "../models/playlist.model.js";
 
 const createPlaylist=asynchandler(async (req,res)=>{
-    const {name,description,visibility}=req.body;
-    const videoId=req.params;
+    const {name,description,visibility,videoId}=req.body;
     if(!mongoose.Types.ObjectId.isValid(videoId))
         throw new ApiError(400,"Invalid video id");
-    const video=Video.findById(videoId);
+    const video=await Video.findById(videoId);
     if(!video)
         throw new ApiError(404,"Video not found");
     if(!name)
