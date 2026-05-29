@@ -3,6 +3,7 @@ import { asynchandler } from "../utils/asyncHandler.js";
 import { Subscription } from "../models/subscription.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
+import { User } from "../models/user.models.js";
 
 const toggleSubscription=asynchandler(async (req,res)=>{
     const {channelId}=req.params
@@ -17,16 +18,16 @@ const toggleSubscription=asynchandler(async (req,res)=>{
         throw new ApiError(400, "You cannot subscribe to your own channel");
     }
     const subscription=await Subscription.findOne({
-        channel:mongoose.Types.ObjectId(channelId),
-        subscriber:mongoose.Types.ObjectId(req.user._id)
+        channel:new mongoose.Types.ObjectId(channelId),
+        subscriber:new mongoose.Types.ObjectId(req.user._id)
     });
     let newSubscription=null;
     if(!subscription) newSubscription= await Subscription.create({
-        channel:mongoose.Types.ObjectId(channelId),
-        subscriber:mongoose.Types.ObjectId(req.user._id)
+        channel:new mongoose.Types.ObjectId(channelId),
+        subscriber:new mongoose.Types.ObjectId(req.user._id)
     });
     else await Subscription.findByIdAndDelete(subscription._id);
-    if(!subscription && !newSubscription) throw new ApiError(401,'Error while subscribing');
+    if(subscription^newSubscription===0) throw new ApiError(401,'Error while toggling subscription');
     return res
     .status(200)
     .json(
@@ -42,13 +43,10 @@ const getChannelSubscribers=asynchandler(async (req,res)=>{
     if (!channelExists) {
         throw new ApiError(404, "Channel not found");
     }
-    if (channelId === req.user._id.toString()) {
-        throw new ApiError(400, "You cannot subscribe to your own channel");
-    }
     const pipeline=[
         {
             $match:{
-                channel:mongoose.Types.ObjectId(channelId)
+                channel:new mongoose.Types.ObjectId(channelId)
             }
         },{
             $lookup:{
