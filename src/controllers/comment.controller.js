@@ -7,7 +7,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { Tweet } from '../models/tweet.model.js';
 const getVideoComments=asynchandler(async (req,res)=>{
     const { videoId } = req.params;
-    const { page = 1, limit = 10, query, sortBy = "createdAt", sortType = "desc", userId } = req.query;
+    const { page = 1, limit = 10, query, sortBy = "createdAt", sortType = "desc" } = req.query;
     if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new ApiError(400, "Invalid video id");
     }
@@ -149,6 +149,95 @@ const deleteVideoComment=asynchandler(async (req,res)=>{
         new ApiResponse(200,{},"Comment deleted Successfully")
     )
 })
+const getTweetComments=asynchandler(async(req,res)=>{
+    const { tweetId } = req.params;
+    const { page = 1, limit = 10, query, sortType = "desc" } = req.query;
+    if (!mongoose.Types.ObjectId.isValid(tweetId)) {
+        throw new ApiError(400, "Invalid tweet id");
+    }
+    const tweetExists = await Tweet.exists({ _id: tweetId });
+    if (!tweetExists) {
+        throw new ApiError(404, "tweet does not exist");
+    }
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+    const safeSortBy = "createdAt";
+    const safeSortOrder = String(sortType).toLowerCase() === "asc" ? 1 : -1;
+
+    const matchStage = {
+        tweet: new mongoose.Types.ObjectId(tweetId)
+    }
+    if (query && String(query).trim()) {
+        matchStage.content = { $regex: String(query).trim(), $options: "i" };
+    }
+    const pipeline=[
+        { $match: matchStage },
+        {
+            $lookup:{
+                from:'users',
+                localField:'owner',
+                foreignField:'_id',
+                as:'owner',
+                pipeline:[
+                    {
+                        $project:{
+                            fullName:1,
+                            userName:1,
+                            avatar:1
+                        }
+                    }
+                ]
+            }
+        },{
+            $addFields:{
+                owner:{
+                    $first: "$owner"
+                }
+            }
+        },{
+            $lookup:{
+                from:'likes',
+                let:{commentId:'$_id'},
+                pipeline:[
+                    {
+                        $match:{
+                            $expr: {$eq:["$comment","$$commentId"]}
+                        }
+                    },{
+                        $count:"count"
+                    }
+                ],
+                as:"likesMeta"
+            }
+        },{
+            $addFields:{
+                likesCount:{
+                    $ifNull:[{$first:"$likesMeta.count"},0]
+                }
+            }
+        },{
+            $sort:{
+                [safeSortBy]:safeSortOrder
+            }
+        },{
+            $project:{
+                content:1,
+                owner:1,
+                isEdited:1,
+                likesCount:1,
+                createdAt:1,
+                updatedAt:1
+            }
+        }
+    ]
+    const aggregate=Comment.aggregate(pipeline);
+    const comments= await Comment.aggregatePaginate(aggregate,{page:parsedPage,limit:parsedLimit})
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200,comments,"tweet comments fetched successfully")
+    )
+})
 const addTweetComment=asynchandler(async (req,res)=>{
     const {content}=req.body;
     const {tweetId}=req.params;
@@ -204,5 +293,5 @@ const deleteTweetComment=asynchandler(async (req,res)=>{
 })
 export {
     getVideoComments,addTweetComment,updateVideoComment,deleteVideoComment,addTweetComment,
-    updateTweetComment,deleteTweetComment
+    updateTweetComment,deleteTweetComment,addVideoComment,getTweetComments
 }
