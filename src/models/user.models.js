@@ -27,6 +27,17 @@ const userSchema=new mongoose.Schema(
         },
         refreshToken:{
             type:String
+        },
+        isVerified:{
+            type:Boolean,
+            default:false
+        },
+        verificationCode:{
+            type:String
+        },
+        verificationCodeExpiry:{
+            type:Date,
+            default:null
         }
     },
     {timestamps:true}

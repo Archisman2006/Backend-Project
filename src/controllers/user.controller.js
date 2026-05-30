@@ -5,6 +5,7 @@ import {deleteFromCloudinary, uploadOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
+import { sendVerificationCode } from '../middlewares/email.middleware.js'
 const getAccessAndRefreshTokens=async (userid,user)=>{
     //const user=User.findById(userid);
     const accessToken=user.generateAccessToken();
@@ -36,10 +37,14 @@ const registerUser=asynchandler(async (req,res)=>{
     const avatar=await uploadOnCloudinary(avatar_localpath);
     const coverImage=(coverImage_localpath==null)?null:await uploadOnCloudinary(coverImage_localpath);
     if(!avatar) throw new ApiError(400,"Avatar is required. 111");
+    //create email verification code
+    const code=Math.floor(100000+Math.random()*900000).toString();
     //create user object
-    const user=await User.create({fullName,avatar:avatar.url,coverImage:coverImage?.url||"",email,password,userName:userName.toLowerCase()});
+    const user=await User.create({fullName,avatar:avatar.url,coverImage:coverImage?.url||"",email,
+        password,userName:userName.toLowerCase(),verificationCode:code,isVerified:false});
     //remove password and refresh token field from response
     //console.log(User);
+    await sendVerificationCode(user.email,code);
     const createdUser=await User.findById(user._id).select("-password -refreshToken");
     //check for user creation
     if(!createdUser){
