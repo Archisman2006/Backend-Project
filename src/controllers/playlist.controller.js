@@ -18,7 +18,7 @@ const createPlaylist=asynchandler(async (req,res)=>{
     if(!playlist)
         throw new ApiError(400,"Playlist could not be created")
     return res.status(200).json(
-        new ApiResponse(200,{video},"Playlist created Successfully")
+        new ApiResponse(200,playlist,"Playlist created Successfully")
     )
 })
 const getPlaylistById=asynchandler(async (req,res)=>{
@@ -95,7 +95,7 @@ const getAllPlaylists=asynchandler(async (req,res)=>{
     )
 })
 const addVideoToPlaylist=asynchandler(async (req,res)=>{
-    const {videoId,playlistId}=req.body;
+    const {videoId,playlistId}=req.params;
     if(!mongoose.Types.ObjectId.isValid(videoId))
         throw new ApiError(400,"Video id is invalid")
     if(!mongoose.Types.ObjectId.isValid(playlistId))
@@ -137,8 +137,8 @@ const removeVideoFromPlaylist=asynchandler(async (req,res)=>{
     const newPlaylist=await Playlist.findByIdAndUpdate(
         playlistId,
         {
-            $set:{
-                videos:playlist.videos.filter(item=>item!==videoId)
+            $pull:{
+                videos:videoId
             }
         },{
             new:true
@@ -166,7 +166,7 @@ const updatePlaylist=asynchandler(async (req,res)=>{
     )
     if(!newPlaylist) throw new ApiError(400,"Playlist could not be updated")
     return res.status(200).json(
-        new ApiResponse(401,newPlaylist,"Playlist updated successfully")
+        new ApiResponse(200,newPlaylist,"Playlist updated successfully")
     )
 })
 const deletePlaylist=asynchandler(async (req,res)=>{
