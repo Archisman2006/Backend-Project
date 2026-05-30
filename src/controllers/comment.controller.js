@@ -97,8 +97,8 @@ const getVideoComments=asynchandler(async (req,res)=>{
     )
 })  
 const addVideoComment=asynchandler(async (req,res)=>{
-    const {content}=req.body;
-    const {videoId}=req.params;
+    const {content}=req?.body;
+    const {videoId}=req?.params;
     if(!content) throw new ApiError(400,"Comment body is required")
     if(!mongoose.Types.ObjectId.isValid(videoId)) 
         throw new ApiError(401,"video id is not valid")

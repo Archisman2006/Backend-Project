@@ -70,7 +70,7 @@ const getChannelStats=asynchandler(async (req,res)=>{
     const pipeline=[
         {
             $match:{
-                _id:mongoose.Types.ObjectId(channelId)
+                _id:new mongoose.Types.ObjectId(channelId)
             }
         },{
             $lookup:{

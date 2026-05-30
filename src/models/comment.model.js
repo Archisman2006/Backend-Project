@@ -25,13 +25,10 @@ const commentSchema=new mongoose.Schema(
         timestamps:true
     }
 )
-commentSchema.pre("validate", function (next) {
-    const hasVideo = this.video;
-    const hasTweet = this.tweet;
-    if (hasVideo === hasTweet) {
-        return next(new ApiError(400,"Comment must belong to either video or tweet, not both."));
+commentSchema.pre("validate", function () {
+    if (this.video && this.tweet) {
+        throw new ApiError(400, "Comment must belong to either a video or a tweet, not both.");
     }
-    next();
 });
 commentSchema.plugin(mongooseAggregatePaginate)
 export const Comment=mongoose.model('Comment',commentSchema);
