@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import dotenv from 'dotenv';
+import { Verification_Email_Template, Welcome_Email_Template } from '../utils/emailTemplate.js';
 dotenv.config();
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -10,21 +11,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
     },
 });
-// const sendEmail=async()=>{
-//     try {
-//         const info=await transporter.sendMail({
-//     from: `"Archisman Das" <${process.env.SMTP_USER}>`, // sender address
-//     to: process.env.SMTP_USER, // list of recipients
-//     subject: "Hello", // subject line
-//     text: "Hello world?", // plain text body
-//     html: "<b>Hello world?</b>", // HTML body
-// });
-//     console.log(info);
-//     } catch (error) {
-//         console.log(error);
-//     }
-// }
-// sendEmail();
 export const sendVerificationCode=async(email,code)=>{
     try {
         const info=await transporter.sendMail({
@@ -32,9 +18,23 @@ export const sendVerificationCode=async(email,code)=>{
     to: email, // list of recipients
     subject: "verify your email", // subject line
     text: "please verify email.", // plain text body
-    html: code, // HTML body
+    html: Verification_Email_Template.replace("{verificationCode}",code), // HTML body
     })
     //console.log(info);
+    }
+    catch(error){
+        console.log(error);
+    }
+}
+export const sendWelcomeEmail=async(email,name)=>{
+    try{
+        const info=await transporter.sendMail({
+    from: `"Archisman Das" <${process.env.SMTP_USER}>`, // sender address
+    to: email, // list of recipients
+    subject: "Welcome", // subject line
+    text: "Email verification completed.", // plain text body
+    html: Welcome_Email_Template.replace('{name}',name), // HTML body
+    })
     }
     catch(error){
         console.log(error);

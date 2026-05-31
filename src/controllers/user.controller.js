@@ -5,7 +5,8 @@ import {deleteFromCloudinary, uploadOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
-import { sendVerificationCode } from '../middlewares/email.middleware.js'
+import { sendVerificationCode, sendWelcomeEmail } from '../middlewares/email.middleware.js'
+import { VERIFICATION_CODE_EXPIRY_MS } from '../constants.js'
 const getAccessAndRefreshTokens=async (userid,user)=>{
     //const user=User.findById(userid);
     const accessToken=user.generateAccessToken();
@@ -37,11 +38,13 @@ const registerUser=asynchandler(async (req,res)=>{
     const avatar=await uploadOnCloudinary(avatar_localpath);
     const coverImage=(coverImage_localpath==null)?null:await uploadOnCloudinary(coverImage_localpath);
     if(!avatar) throw new ApiError(400,"Avatar is required. 111");
-    //create email verification code
+    //create email verification code and expiry
     const code=Math.floor(100000+Math.random()*900000).toString();
+    const expiry = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
     //create user object
     const user=await User.create({fullName,avatar:avatar.url,coverImage:coverImage?.url||"",email,
-        password,userName:userName.toLowerCase(),verificationCode:code,isVerified:false});
+        password,userName:userName.toLowerCase(),verificationCode:code,isVerified:false,
+    verificationCodeExpiry:expiry});
     //remove password and refresh token field from response
     //console.log(User);
     await sendVerificationCode(user.email,code);
@@ -55,6 +58,38 @@ const registerUser=asynchandler(async (req,res)=>{
         new ApiResponse(200,createdUser,"User created Successfully")
     )
 })
+const verifyEmail=asynchandler(async (req,res)=>{
+    const {code}=req?.body;
+    const user=await User.findOne({
+        verificationCode:code
+    })
+    if(!user) throw new ApiError(404,"Invalid or expired code provided");
+    if(user.verificationCodeExpiry && user.verificationCodeExpiry<new Date())
+        throw new ApiError(410,"Verification code has expired");
+    user.verificationCode=undefined;
+    user.isVerified=true;
+    user.verificationCodeExpiry=undefined;
+    await user.save({validateBeforeSave:false});
+    await sendWelcomeEmail(user.email,user.fullName);
+    return res.status(200).json(
+        new ApiResponse(200,user,"Email Verification Successful")
+    )
+})
+const resendVerificationCode=asynchandler(async (req,res)=>{
+    const {email}=req?.body;
+    const user=await User.findOne({email});
+    if(!user) throw new ApiError(404,"User with given email doesn't exist")
+    if(user.isVerified) throw new ApiError(400,"user is already verified");
+    const code=Math.floor(100000+Math.random()*900000);
+    const expiry=new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
+    user.verificationCode=code;
+    user.verificationCodeExpiry=expiry;
+    await user.save({validateBeforeSave:false});
+    await sendVerificationCode(user.email,code);
+    return res.status(200).json(
+        new ApiResponse(200,"verification code resent successfully")
+    )
+})
 const loginUser=asynchandler(async (req,res)=>{
     // get data from req.body
     const {email,userName,password}=req.body;
@@ -65,6 +100,8 @@ const loginUser=asynchandler(async (req,res)=>{
     //check if password is correct
     const valid=await user.isPasswordCorrect(password);
     if(!valid) throw new ApiError(401,"Password is Invalid");
+    //do not log user in if email is not verified
+    if(!user.isVerified) throw new ApiError(401,"User email is not verified")
     //generate access and refresh token
     const {accessToken,refreshToken}=await getAccessAndRefreshTokens(user._id,user);
     const loggedInUser=await User.findById(user._id)
@@ -319,5 +356,6 @@ const getWatchHistory=asynchandler(async (req,res)=>{
 })
 export {registerUser,loginUser,logoutUser,refreshAccessToken,
     changeCurrentPassword,getCurrentUser,updateAccountDetails,updateAvatar,
-    updateCoverImage,getChannelProfile,getWatchHistory
+    updateCoverImage,getChannelProfile,getWatchHistory,verifyEmail,
+    resendVerificationCode
 }
