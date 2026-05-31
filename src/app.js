@@ -3,7 +3,9 @@ import cookieParser from "cookie-parser";
 import cors from 'cors'
 const app=express();
 app.use(cors({
-    origin:process.env.CORS_ORIGIN
+    origin:process.env.CORS_ORIGIN,
+    credentials:true,
+    methods:["GET","POST","PUT","DELETE","PATCH","OPTIONS"]
 }));
 app.use(express.json({limit:"512kb"}));
 app.use(express.urlencoded({extended:true,limit:"1024kb"}));
