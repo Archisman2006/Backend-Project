@@ -6,6 +6,7 @@ import { changeCurrentPassword, getChannelProfile, getCurrentUser,
     from "../controllers/user.controller.js";
 import {upload} from '../middlewares/multer.middleware.js'
 import { VerifyJWT } from "../middlewares/auth.middleware.js";
+import { VerificationResendLimiter } from "../middlewares/ratelimiter.middleware.js";
 const router=Router();
 router.route("/register").post(
     upload.fields([
@@ -26,6 +27,7 @@ router.route("/register").post(
         verifyEmail
     )
     router.route("/resend-verification-code").post(
+        VerificationResendLimiter,
         resendVerificationCode
     )
     router.route("/login").post(
