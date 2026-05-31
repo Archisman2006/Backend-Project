@@ -82,6 +82,42 @@ const getAllVideos=asynchandler(async (req,res)=>{
         new ApiResponse(200,videos,'Videos fetched successfully')
     )
 })
+const searchVideos=asynchandler(async (req,res)=>{
+    const {page=1,limit=10,query}=req.query;
+    const parsedPage=Math.max(parseInt(page,10)|| 1,1)
+    const parsedLimit=Math.min(Math.max(parseInt(limit,10) || 10,1),50)
+    if(!query) throw new ApiError(400,"Search query parameter is required");
+    const pipeline=[
+        {
+            $search:{
+                index:"default",
+                text:{
+                    query:query,
+                    path:['title','description'],
+                    fuzzy:{
+                        maxEdits:2,
+                        prefixLength:1,
+                        maxExpansions:50,
+                    }
+                }
+            }
+        },{
+            $match:{
+                isPublished:true,
+            }
+        },{
+            $addFields:{
+                searchScore:{$meta:"searchScore"}
+            }
+        }
+    ]
+    const searchResults=await Video.aggregatePaginate(Video.aggregate(pipeline),{
+        page:parsedPage,limit:parsedLimit
+    })
+    return res.status(200).json(
+        new ApiResponse(200,searchResults,"Fuzzy search results fetched successfully")
+    )
+})
 const publishVideo=asynchandler(async (req,res)=>{
     const {title,description}=req.body;
     if(!title) throw new ApiError(400,"Title is required");
@@ -177,4 +213,5 @@ const deleteVideo=asynchandler(async (req,res)=>{
         new ApiResponse(200,{},"Video Deleted Successfully")
     )
 })
-export {getAllVideos,publishVideo,getVideoByID,watchVideo,updateVideo,deleteVideo};
+export {getAllVideos,publishVideo,getVideoByID,watchVideo,
+    updateVideo,deleteVideo,searchVideos};
