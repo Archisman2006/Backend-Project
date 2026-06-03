@@ -100,7 +100,7 @@ const getSubscribedChannels=asynchandler(async (req,res)=>{
                 pipeline:[
                     {
                         $project:{
-                            _id:0,
+                            _id:1,
                             userName:1,
                             fullName:1,
                             avatar:1,
