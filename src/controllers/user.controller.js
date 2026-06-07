@@ -92,6 +92,7 @@ const resendVerificationCode=asynchandler(async (req,res)=>{
 })
 const loginUser=asynchandler(async (req,res)=>{
     // get data from req.body
+    //TODO: use single field named identifier instead of email and password.
     const {email,userName,password}=req.body;
     if(!email && !userName) throw new ApiError(400,"Either email or username is required");
     const user=await User.findOne({$or:[{email},{userName}]});
