@@ -123,13 +123,22 @@ const publishVideo=asynchandler(async (req,res)=>{
     if(!title) throw new ApiError(400,"Title is required");
     const videoFile_localpath=req.files?.videoFile?.[0]?.path
     if(!videoFile_localpath) throw new ApiError(401,"Video File is Missing");
-    const videoFile=await uploadOnCloudinary(videoFile_localpath);
-    if(!videoFile) throw new ApiError(401,'video file could not be uploaded.');
+    const response=await uploadOnCloudinary(videoFile_localpath,{
+    resource_type: "video", // Cloudinary treats it as a video
+    eager: [
+        { streaming_profile: "full_hd", format: "m3u8" } // Generates the HLS chunks
+    ],
+    eager_async: true // Processes the video slices in the background
+    });
+    if(!response) throw new ApiError(401,'video file could not be uploaded.');
+    const mp4Url = response.secure_url;
+    const hlsUrl = response.eager?.[0]?.secure_url;
     let thumbnail_localpath=null;
     if(req.files && Array.isArray(req.files.thumbnail) && req.files.thumbnail.length>0)
         thumbnail_localpath=req.files?.thumbnail?.[0]?.path;
     const thumbnail=(thumbnail_localpath==null)?null:await uploadOnCloudinary(thumbnail_localpath);
-    const video= await Video.create({videoFile:videoFile.url,thumbnail:thumbnail?.url,title,description,duration:videoFile.duration,owner:new mongoose.Types.ObjectId(req.user._id)});
+    const video= await Video.create({videoFile:mp4Url,streamingUrl:hlsUrl,thumbnail:thumbnail?.url,
+        title,description,duration:response.duration,owner:new mongoose.Types.ObjectId(req.user._id)});
     if(!video) throw new ApiError(500,'Video Upload Failed.');
     return res.
     status(200)

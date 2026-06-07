@@ -6,6 +6,9 @@ const videoSchema=new mongoose.Schema(
         videoFile:{
             type:String,required:true
         },
+        streamingUrl: {
+        type: String, // Store the .m3u8 url
+        },
         thumbnail:{
             type:String
         },
