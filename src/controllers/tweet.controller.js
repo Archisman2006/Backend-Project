@@ -118,4 +118,5 @@ const deleteTweet=asynchandler(async (req,res)=>{
         new ApiResponse(200,{},'Tweet successfully deleted')
     )
 }) 
+// TODO: add getTweetById controller
 export {createTweet,getAllTweets,updateTweet,deleteTweet}
