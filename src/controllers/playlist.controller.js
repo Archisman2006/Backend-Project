@@ -22,15 +22,79 @@ const createPlaylist=asynchandler(async (req,res)=>{
     )
 })
 const getPlaylistById=asynchandler(async (req,res)=>{
-    const {playlistId}=req.params;
-    if(!mongoose.Types.ObjectId.isValid(playlistId))
-        throw new ApiError(401,"playlist id is invalid")
-    const playlist=await Playlist.findById(playlistId);
-    if(!playlist)
-        throw new ApiError(404,"playlist not found");
+    const { playlistId } = req.params;
+    const { page = 1, limit = 10 } = req.query; // Added pagination queries
+
+    if (!mongoose.Types.ObjectId.isValid(playlistId))
+        throw new ApiError(401, "playlist id is invalid");
+
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+    const skipIndex = (parsedPage - 1) * parsedLimit;
+    const playlist = await Playlist.aggregate([
+        {
+            //Find the specific playlist
+            $match: {
+                _id: new mongoose.Types.ObjectId(playlistId)
+            }
+        },
+        {
+            //Extract just a "chunk" of the videos array (Pagination)
+            $project: {
+                name: 1,
+                description: 1,
+                visibility: 1,
+                owner: 1,
+                createdAt: 1,
+                totalVideosCount: { $size: "$videos" }, // Save total count for frontend
+                // Slice cuts out just the 10 IDs we need for this page
+                paginatedVideoIds: { $slice: ["$videos", skipIndex, parsedLimit] } 
+            }
+        },
+        {
+            //The Bulk Fetch
+            $lookup: {
+                from: "videos",
+                localField: "paginatedVideoIds",
+                foreignField: "_id",
+                as: "videos", // Replaces the array with populated video objects
+                pipeline: [
+                    {
+                        // Fetch the owner details of each video
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                { $project: { userName: 1, fullName: 1, avatar: 1 } }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: { owner: { $first: "$owner" } }
+                    },
+                    {
+                        $project: {
+                            videoFile: 1, thumbnail: 1, title: 1, duration: 1, views: 1, owner: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            // remove the temporary ID array
+            $project: {
+                paginatedVideoIds: 0
+            }
+        }
+    ]);
+    if (!playlist?.length)
+        throw new ApiError(404, "playlist not found");
+    const hasNextPage = skipIndex + parsedLimit < playlist[0].totalVideosCount;
     return res.status(200).json(
-        new ApiResponse(200,playlist,"playlist retrieved successfully")
-    )
+        new ApiResponse(200, {playlist: playlist[0],hasNextPage}, "playlist retrieved successfully")
+    );
 })
 const getAllPlaylists=asynchandler(async (req,res)=>{
     const {page=1,limit=10,query,sortType="desc",userId}=req.query;
