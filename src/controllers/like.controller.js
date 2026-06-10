@@ -75,5 +75,76 @@ const toggleCommentLike=asynchandler(async (req,res)=>{
             new ApiResponse(200,newLike,"like added successfully")
         )
     }
+})
+const getLikedVideos=asynchandler(async (req,res)=>{
+    const {page=1,limit=15}=req.query;
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+    const pipeline= [
+        {
+            $match:{
+                owner: req.user._id
+            }
+        },{
+            $lookup:{
+                from:'videos',
+                localField:'video',
+                foreignField:'_id',
+                as:'video',
+                pipeline:[
+                    {
+                        $lookup:{
+                            from:'users',
+                            localField:'owner',
+                            foreignField:'_id',
+                            as:'owner',
+                            pipeline:[
+                                {
+                                    $project:{
+                                        username:1,
+                                        fullName:1,
+                                        avatar:1
+                                    }
+                                }
+                            ]
+                        }
+                    },{
+                        $addFields:{
+                            owner:{
+                                $first:'$owner'
+                            }
+                        }
+                    },{
+                        $project:{
+                            videoFile:1,
+                            streamingUrl:1,
+                            thumbnail:1,
+                            title:1,
+                            description:1,
+                            views:1,
+                            owner:1
+                        }
+                    }
+                ]
+            }
+        },{
+            $addFields:{
+                video:{
+                    $first:'$video'
+                }
+            }
+        },{
+            $project:{
+                video:1
+            }
+        }
+    ]
+    const aggregate=Like.aggregate(pipeline);
+    const likedVideos=await Like.aggregatePaginate(aggregate,{
+        page:parsedPage,limit:parsedLimit
+    });
+    return res.status(200).json(
+        new ApiResponse(200,likedVideos,"liked videos retrieved successfully")
+    )
 }) 
 export {toggleVideoLike,toggleTweetLike,toggleCommentLike}
