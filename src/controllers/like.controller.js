@@ -147,4 +147,4 @@ const getLikedVideos=asynchandler(async (req,res)=>{
         new ApiResponse(200,likedVideos,"liked videos retrieved successfully")
     )
 }) 
-export {toggleVideoLike,toggleTweetLike,toggleCommentLike}
+export {toggleVideoLike,toggleTweetLike,toggleCommentLike,getLikedVideos}
