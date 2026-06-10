@@ -375,8 +375,33 @@ const getWatchHistory=asynchandler(async (req,res)=>{
         new ApiResponse(200, {videos:watchedVideos[0],hasNextPage},"Watch History retrieved successfully")    
     )
 })
+const clearWatchHistory=asynchandler(async (req,res)=>{
+    await User.findByIdAndUpdate(
+        req.user._id,{
+            $set:{watchHistory:[]}
+        }
+    )
+    return res.status(200).json(
+        new ApiResponse(200,{},"watch history cleared successfully")
+    )
+})
+const removeVideoFromWatchHistory=asynchandler(async (req,res)=>{
+    const {videoId}=req.params;
+    if(!mongoose.Types.ObjectId.isValid(videoId))
+            throw new ApiError(400, "Invalid video ID");
+    await User.findByIdAndUpdate(
+        req.user._id,{
+            $pull:{
+                watchHistory:videoId
+            }
+        }
+    )
+    return res.status(200).json(
+        new ApiResponse(200,{},"video removed from user watch history")
+    )
+})
 export {registerUser,loginUser,logoutUser,refreshAccessToken,
     changeCurrentPassword,getCurrentUser,updateAccountDetails,updateAvatar,
     updateCoverImage,getChannelProfile,getWatchHistory,verifyEmail,
-    resendVerificationCode
+    resendVerificationCode,clearWatchHistory,removeVideoFromWatchHistory
 }

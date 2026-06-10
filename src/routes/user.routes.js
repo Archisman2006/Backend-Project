@@ -2,7 +2,7 @@ import { Router } from "express";
 import { changeCurrentPassword, getChannelProfile, getCurrentUser, 
     getWatchHistory, loginUser, logoutUser, refreshAccessToken, 
     registerUser, resendVerificationCode, updateAccountDetails, 
-    updateAvatar, updateCoverImage, verifyEmail } 
+    updateAvatar, updateCoverImage, verifyEmail,clearWatchHistory,removeVideoFromWatchHistory } 
     from "../controllers/user.controller.js";
 import {upload} from '../middlewares/multer.middleware.js'
 import { VerifyJWT } from "../middlewares/auth.middleware.js";
@@ -56,5 +56,9 @@ router.route("/register").post(
     )
     router.route("/history").get(
         VerifyJWT,getWatchHistory
+    )
+    .delete(VerifyJWT,clearWatchHistory)
+    router.route("/history/:videoId").delete(
+        VerifyJWT,removeVideoFromWatchHistory
     )
 export default router;
