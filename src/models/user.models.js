@@ -18,10 +18,10 @@ const userSchema=new mongoose.Schema(
         coverImage:{
             type:String
         },
-        watchHistory:{
+        watchHistory:[{
             type:mongoose.Schema.Types.ObjectId,
             ref:'Video'
-        },
+        }],
         password:{
             type:String, required:[true,'Password is required']
         },

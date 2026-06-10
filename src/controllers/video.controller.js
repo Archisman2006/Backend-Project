@@ -173,6 +173,11 @@ const watchVideo=asynchandler(async (req,res)=>{
     if (viewedNow) {
         updatedVideo=await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } },{new:true})
     }
+    req.user.watchHistory = req.user.watchHistory.filter(
+        (id) => id.toString() !== videoId.toString()
+    );
+    req.user.watchHistory.unshift(videoId);
+    await req.user.save({validateBeforeSave:false})
     return res
     .status(200)
     .json(

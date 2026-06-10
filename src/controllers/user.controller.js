@@ -310,15 +310,24 @@ return res.status(200).json(
 )
 })
 const getWatchHistory=asynchandler(async (req,res)=>{
-    const user=await User.aggregate([
+    const { page = 1, limit = 10 } = req.query;
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+    const skipIndex = (parsedPage - 1) * parsedLimit;
+    const watchedVideos=await User.aggregate([
         {
             $match:{
                 _id:new mongoose.Types.ObjectId(req.user._id)
             }
         },{
+            $project:{
+                totalVideos:{$size:"$watchHistory"},
+                paginatedWatchHistory:{ $slice: ["$watchHistory",skipIndex, parsedLimit] }
+            } 
+        },{
             $lookup:{
                 from:'videos',
-                localField:'watchhistory',
+                localField:'paginatedWatchHistory',
                 foreignField:'_id',
                 as:'watchHistory',
                 pipeline:[
@@ -344,15 +353,26 @@ const getWatchHistory=asynchandler(async (req,res)=>{
                                 $first:'$owner'
                             }
                         }
+                    },
+                    {
+                        $project: {
+                            videoFile: 1, thumbnail: 1, title: 1, duration: 1, views: 1, owner: 1
+                        }
                     }
                 ]
+            }
+        },
+        {
+            $project: {
+                paginatedWatchHistory: 0
             }
         }
     ]
     )
+    const hasNextPage = skipIndex + parsedLimit < watchedVideos[0].totalVideos;
     return res.status(200)
     .json(
-        new ApiResponse(200, user[0].watchHistory,"Watch History retrieved successfully")    
+        new ApiResponse(200, {videos:watchedVideos[0],hasNextPage},"Watch History retrieved successfully")    
     )
 })
 export {registerUser,loginUser,logoutUser,refreshAccessToken,
