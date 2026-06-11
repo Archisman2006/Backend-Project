@@ -4,6 +4,7 @@ import { Subscription } from "../models/subscription.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
+import { pipeline } from "nodemailer/lib/xoauth2/index.js";
 
 const toggleSubscription=asynchandler(async (req,res)=>{
     const {channelId}=req.params
@@ -85,6 +86,9 @@ const getChannelSubscribers=asynchandler(async (req,res)=>{
     )
 })
 const getSubscribedChannels=asynchandler(async (req,res)=>{
+    const {page=1,limit=20}=req.query;
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
     const subscriberId=new mongoose.Types.ObjectId(req.user._id);
     const pipeline=[
         {
@@ -121,11 +125,81 @@ const getSubscribedChannels=asynchandler(async (req,res)=>{
             }
         }
     ]
-    const channels=await Subscription.aggregate(pipeline);
+    const aggregate=Subscription.aggregate(pipeline);
+    const channels=await Subscription.aggregatePaginate(aggregate,{
+        page:parsedPage,limit:parsedLimit
+    });
     return res.
     status(200)
     .json(
         new ApiResponse(200,channels,"Subscribed channels are successfully retrieved.")
     )
+})
+const getFeedVideos=asynchandler(async (req,res)=>{
+    const userId=new mongoose.Types.ObjectId(req.user._id);
+    const {page=1,limit=20}=req.query;
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+    const pipeline=[
+        {
+            $match:{
+                subscriber:userId
+            }
+        },{
+            $lookup:{
+                from:'users',
+                localField:'channel',
+                foreignField:'_id',
+                as:'channels',
+                pipeline:[
+                    {
+                        $lookup:{
+                            from:'videos',
+                            localField:'_id',
+                            foreignField:'owner',
+                            as:'videos',
+                            pipeline:[
+                                {
+                                    $project:{
+                                        _id:1,
+                                        videoFile:1,
+                                        thumbnail:1,
+                                        title:1,
+                                        views:1,
+                                        createdAt:1
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },{
+            $unwind:'$channels'
+        },{
+            $unwind:'$channels.videos'
+        },{
+            $replaceRoot:{
+                newRoot:{
+                    $mergeObjects:[
+                        '$channels.videos',{
+                            owner:{
+                                username:'$channels.username',
+                                fullName:'$channels.fullName',
+                                avatar:'$channels.avatar'
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ];
+    const aggregate=Subscription.aggregate(pipeline);
+    const videos=await Subscription.aggregatePaginate(aggregate,{
+        page:parsedPage,limit:parsedLimit
+    })
+    return res.status(200).json(
+        new ApiResponse(200,videos,"Feed Videos retrieved Successfully")
+    );
 })
 export {toggleSubscription,getChannelSubscribers,getSubscribedChannels}
