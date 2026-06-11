@@ -9,5 +9,5 @@ router.route('/'),get(getFeedVideos)
 router.route('/:channelId')
 .post(toggleSubscription)
 .get(getChannelSubscribers)
-router.route('/subscribed-channels/:subscriberId').get(getSubscribedChannels)
+router.route('/subscribed-channels').get(getSubscribedChannels)
 export default router
