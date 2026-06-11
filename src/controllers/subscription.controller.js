@@ -119,9 +119,8 @@ const getSubscribedChannels=asynchandler(async (req,res)=>{
                 }
             }
         },{
-            $project:{
-                _id:0,
-                channel:1,
+            $replaceRoot:{
+                newRoot:'$channel'
             }
         }
     ]
