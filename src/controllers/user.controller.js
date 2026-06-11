@@ -18,12 +18,12 @@ const getAccessAndRefreshTokens=async (userid,user)=>{
 const registerUser=asynchandler(async (req,res)=>{
     const body = req.body || {};
     // get user details from frontend
-    const {userName,email,fullName,password}=body
+    const {username,email,fullName,password}=body
     //validation
-    if([userName,email,fullName].some((i)=>i?.trim()==="")) throw new ApiError(400,"All fields are Required");
+    if([username,email,fullName].some((i)=>i?.trim()==="")) throw new ApiError(400,"All fields are Required");
     //check if user already exists
     const userExists=await User.findOne({
-        $or:[{userName},{email}]
+        $or:[{username},{email}]
     })
     if(userExists) throw new ApiError(409,"User Already Exists");
     //check for images,avatar
@@ -43,7 +43,7 @@ const registerUser=asynchandler(async (req,res)=>{
     const expiry = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
     //create user object
     const user=await User.create({fullName,avatar:avatar.url,coverImage:coverImage?.url||"",email,
-        password,userName:userName.toLowerCase(),verificationCode:code,isVerified:false,
+        password,username:username.toLowerCase(),verificationCode:code,isVerified:false,
     verificationCodeExpiry:expiry});
     //remove password and refresh token field from response
     //console.log(User);
@@ -93,9 +93,9 @@ const resendVerificationCode=asynchandler(async (req,res)=>{
 const loginUser=asynchandler(async (req,res)=>{
     // get data from req.body
     //TODO: use single field named identifier instead of email and password.
-    const {email,userName,password}=req.body;
-    if(!email && !userName) throw new ApiError(400,"Either email or username is required");
-    const user=await User.findOne({$or:[{email},{userName}]});
+    const {email,username,password}=req.body;
+    if(!email && !username) throw new ApiError(400,"Either email or username is required");
+    const user=await User.findOne({$or:[{email},{username}]});
     //validate if user exists
     if(!user) throw new ApiError(404,"User Doesn't exist");
     //check if password is correct
@@ -201,13 +201,13 @@ const getCurrentUser=asynchandler(async (req,res)=>{
     )
 })
 const updateAccountDetails=asynchandler(async (req,res)=>{
-    const {userName,email,fullName}=req.body;
-    if([userName,email,fullName].some((i)=>i?.trim()==="")) 
+    const {username,email,fullName}=req.body;
+    if([username,email,fullName].some((i)=>i?.trim()==="")) 
         throw new ApiError(400,"All fields are Required");
     const user=await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set:{userName,email,fullName}
+            $set:{username,email,fullName}
         },
         {new:true}
     ).select("-password -refreshToken")
@@ -259,10 +259,10 @@ const updateCoverImage=asynchandler(async (req,res)=>{
     )
 })
 const getChannelProfile=asynchandler(async (req,res)=>{
-    const {userName}=req.params
-    if(!userName) throw new ApiError(401,"Username not provided");
+    const {username}=req.params
+    if(!username) throw new ApiError(401,"username not provided");
     const channel=await User.aggregate([{
-        $match:{userName:userName}
+        $match:{username:username}
     },{
         $lookup:{
             from:'subscriptions',
@@ -294,7 +294,7 @@ const getChannelProfile=asynchandler(async (req,res)=>{
         }
     },{
         $project:{
-            userName:1,
+            username:1,
             fullName:1,
             avatar:1,
             coverImage:1,
@@ -341,7 +341,7 @@ const getWatchHistory=asynchandler(async (req,res)=>{
                                 {
                                     $project:{
                                         fullName:1,
-                                        userName:1,
+                                        username:1,
                                         avatar:1
                                     }
                                 }

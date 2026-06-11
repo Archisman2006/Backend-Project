@@ -40,7 +40,7 @@ const getVideoComments=asynchandler(async (req,res)=>{
                     {
                         $project:{
                             fullName:1,
-                            userName:1,
+                            username:1,
                             avatar:1
                         }
                     }
@@ -182,7 +182,7 @@ const getTweetComments=asynchandler(async(req,res)=>{
                     {
                         $project:{
                             fullName:1,
-                            userName:1,
+                            username:1,
                             avatar:1
                         }
                     }

@@ -4,7 +4,6 @@ import { Subscription } from "../models/subscription.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
-import { pipeline } from "nodemailer/lib/xoauth2/index.js";
 
 const toggleSubscription=asynchandler(async (req,res)=>{
     const {channelId}=req.params
@@ -59,7 +58,7 @@ const getChannelSubscribers=asynchandler(async (req,res)=>{
                     {
                         $project:{
                             fullName:1,
-                            userName:1,
+                            username:1,
                             avatar:1,
                         }
                     }
@@ -105,7 +104,7 @@ const getSubscribedChannels=asynchandler(async (req,res)=>{
                     {
                         $project:{
                             _id:1,
-                            userName:1,
+                            username:1,
                             fullName:1,
                             avatar:1,
                         }

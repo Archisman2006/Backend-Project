@@ -5,7 +5,7 @@ import {toggleSubscription,getChannelSubscribers,
 } from '../controllers/subscription.controller.js'
 const router=Router();
 router.use(VerifyJWT)
-router.route('/'),get(getFeedVideos)
+router.route('/').get(getFeedVideos)
 router.route('/:channelId')
 .post(toggleSubscription)
 .get(getChannelSubscribers)

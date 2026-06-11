@@ -45,7 +45,7 @@ const getAllTweets=asynchandler(async (req,res)=>{
                 pipeline:[
                     {
                         $project:{
-                            userName:1,
+                            username:1,
                             avatar:1
                         }
                     }

@@ -28,7 +28,7 @@ const getChannelVideos=asynchandler(async (req,res)=>{
                 pipeline:[
                     {
                         $project:{
-                            userName:1,
+                            username:1,
                             avatar:1
                         }
                     }
@@ -119,7 +119,7 @@ const getChannelStats=asynchandler(async (req,res)=>{
             }
         },{
             $project:{
-                userName:1,
+                username:1,
                 fullName:1,
                 avatar:1,
                 coverImage:1,

@@ -67,7 +67,7 @@ const getPlaylistById=asynchandler(async (req,res)=>{
                             foreignField: "_id",
                             as: "owner",
                             pipeline: [
-                                { $project: { userName: 1, fullName: 1, avatar: 1 } }
+                                { $project: { username: 1, fullName: 1, avatar: 1 } }
                             ]
                         }
                     },
@@ -128,7 +128,7 @@ const getAllPlaylists=asynchandler(async (req,res)=>{
                 pipeline:[
                     {
                         $project:{
-                            userName:1,
+                            username:1,
                             avatar:1,
                             fullName:1
                         }

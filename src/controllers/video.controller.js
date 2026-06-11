@@ -43,7 +43,7 @@ const getAllVideos=asynchandler(async (req,res)=>{
                         $project:{
                             _id:1,
                             fullName:1,
-                            userName:1,
+                            username:1,
                             avatar:1,
                         }
                     }
