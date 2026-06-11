@@ -202,4 +202,4 @@ const getFeedVideos=asynchandler(async (req,res)=>{
         new ApiResponse(200,videos,"Feed Videos retrieved Successfully")
     );
 })
-export {toggleSubscription,getChannelSubscribers,getSubscribedChannels}
+export {toggleSubscription,getChannelSubscribers,getSubscribedChannels,getFeedVideos}
