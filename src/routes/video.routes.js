@@ -6,11 +6,11 @@ import {getAllVideos,publishVideo,getVideoByID,
 import { VerifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 const router=Router();
-router.use(VerifyJWT);
 router
 .route("/")
 .get(getAllVideos)
 .post(
+    VerifyJWT,
     upload.fields([
         {
             name:'videoFile',
@@ -26,6 +26,6 @@ router
 .route("/:videoId")
 .get(getVideoByID)
 .post(watchVideo)
-.delete(deleteVideo)
-.patch(upload.single("thumbnail"),updateVideo)
+.delete(VerifyJWT,deleteVideo)
+.patch(VerifyJWT,upload.single("thumbnail"),updateVideo)
 export default router

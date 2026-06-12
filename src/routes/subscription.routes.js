@@ -6,8 +6,8 @@ import {toggleSubscription,getChannelSubscribers,
 const router=Router();
 router.use(VerifyJWT)
 router.route('/').get(getFeedVideos)
+router.route('/subscribed-channels').get(getSubscribedChannels)
 router.route('/:channelId')
 .post(toggleSubscription)
 .get(getChannelSubscribers)
-router.route('/subscribed-channels').get(getSubscribedChannels)
 export default router
