@@ -93,9 +93,11 @@ const resendVerificationCode=asynchandler(async (req,res)=>{
 const loginUser=asynchandler(async (req,res)=>{
     // get data from req.body
     //TODO: use single field named identifier instead of email and password.
-    const {email,username,password}=req.body;
-    if(!email && !username) throw new ApiError(400,"Either email or username is required");
-    const user=await User.findOne({$or:[{email},{username}]});
+    const {identifier,password}=req.body;
+    if(!identifier) throw new ApiError(400,"Either email or username is required");
+    const user=await User.findOne({$or:[
+        {email:identifier},{username:identifier.toLowerCase()}
+    ]});
     //validate if user exists
     if(!user) throw new ApiError(404,"User Doesn't exist");
     //check if password is correct
@@ -191,6 +193,12 @@ const changeCurrentPassword=asynchandler(async (req,res)=>{
     ));
 })
 const getCurrentUser=asynchandler(async (req,res)=>{
+    console.log("inside user controller");
+    if(!req.user){
+        return res.status(200).json(
+            new ApiResponse(200,{},"No user currently logged in")
+        )
+    }
     return res.status(200)
     .json(
         new ApiResponse(
