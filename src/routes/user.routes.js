@@ -2,12 +2,14 @@ import { Router } from "express";
 import { changeCurrentPassword, getChannelProfile, getCurrentUser, 
     getWatchHistory, loginUser, logoutUser, refreshAccessToken, 
     registerUser, resendVerificationCode, updateAccountDetails, 
-    updateAvatar, updateCoverImage, verifyEmail,clearWatchHistory,removeVideoFromWatchHistory } 
+    updateAvatar, updateCoverImage, verifyEmail,clearWatchHistory,removeVideoFromWatchHistory 
+    ,getAllUsers} 
     from "../controllers/user.controller.js";
 import {upload} from '../middlewares/multer.middleware.js'
 import { OptionalVerifyJWT, VerifyJWT } from "../middlewares/auth.middleware.js";
 import { VerificationResendLimiter } from "../middlewares/ratelimiter.middleware.js";
 const router=Router();
+router.route("/").get(getAllUsers)
 router.route("/register").post(
     upload.fields([
         {
@@ -52,7 +54,7 @@ router.route("/register").post(
         VerifyJWT,upload.single("coverImage"),updateCoverImage
     )
     router.route("/channel/:username").get(
-        VerifyJWT,getChannelProfile
+        OptionalVerifyJWT,getChannelProfile
     )
     router.route("/history").get(
         VerifyJWT,getWatchHistory

@@ -148,6 +148,38 @@ const logoutUser=asynchandler(async (req,res)=>{
         200,{},"User Logged Out"
     ))
 })
+const getAllUsers=asynchandler(async (req,res)=>{
+    const {page,limit,query}=req.query;
+    const  parsedPage=Math.max(parseInt(page,10)|| 1,1)
+    const parsedLimit=Math.min(Math.max(parseInt(limit,10) || 10,1),50)
+    const matchStage={};
+    if(query && String(query).trim()){
+        const searchRegex = { $regex: String(query).trim(), $options: "i" };
+        matchStage.$or = [
+            {username:searchRegex},
+            {fullName:searchRegex}
+        ];
+    }
+    const pipeline=[
+        {
+            $match:matchStage
+        },{
+            $project:{
+                _id:1,
+                username:1,
+                fullName:1,
+                avatar:1,    
+            }
+        }
+    ]
+    const aggregate=User.aggregate(pipeline);
+    const users=await User.aggregatePaginate(aggregate,{
+        page:parsedPage,limit:parsedLimit
+    });
+    return res.status(200).json(
+        new ApiResponse(200,users,"channels retreived successfully")
+    );
+})
 const refreshAccessToken=asynchandler(async (req,res)=>{
     const incomingRefreshToken=req.cookies.refreshToken || req.body.refreshToken;
     if(!incomingRefreshToken){
@@ -411,5 +443,5 @@ const removeVideoFromWatchHistory=asynchandler(async (req,res)=>{
 export {registerUser,loginUser,logoutUser,refreshAccessToken,
     changeCurrentPassword,getCurrentUser,updateAccountDetails,updateAvatar,
     updateCoverImage,getChannelProfile,getWatchHistory,verifyEmail,
-    resendVerificationCode,clearWatchHistory,removeVideoFromWatchHistory
+    resendVerificationCode,clearWatchHistory,removeVideoFromWatchHistory,getAllUsers
 }
