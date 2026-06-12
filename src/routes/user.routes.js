@@ -5,7 +5,7 @@ import { changeCurrentPassword, getChannelProfile, getCurrentUser,
     updateAvatar, updateCoverImage, verifyEmail,clearWatchHistory,removeVideoFromWatchHistory } 
     from "../controllers/user.controller.js";
 import {upload} from '../middlewares/multer.middleware.js'
-import { VerifyJWT } from "../middlewares/auth.middleware.js";
+import { OptionalVerifyJWT, VerifyJWT } from "../middlewares/auth.middleware.js";
 import { VerificationResendLimiter } from "../middlewares/ratelimiter.middleware.js";
 const router=Router();
 router.route("/register").post(
@@ -40,7 +40,7 @@ router.route("/register").post(
         VerifyJWT,changeCurrentPassword
     )
     router.route("/current-user").get(
-        VerifyJWT,getCurrentUser
+        OptionalVerifyJWT,getCurrentUser
     )
     router.route("/update-details").patch(
         VerifyJWT,updateAccountDetails
