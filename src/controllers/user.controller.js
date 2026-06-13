@@ -225,7 +225,6 @@ const changeCurrentPassword=asynchandler(async (req,res)=>{
     ));
 })
 const getCurrentUser=asynchandler(async (req,res)=>{
-    console.log("inside user controller");
     if(!req.user){
         return res.status(200).json(
             new ApiResponse(200,{},"No user currently logged in")
@@ -299,6 +298,7 @@ const updateCoverImage=asynchandler(async (req,res)=>{
     )
 })
 const getChannelProfile=asynchandler(async (req,res)=>{
+    console.log("inside getChannelProfile controller")
     const {username}=req.params
     if(!username) throw new ApiError(401,"username not provided");
     const channel=await User.aggregate([{
@@ -327,7 +327,7 @@ const getChannelProfile=asynchandler(async (req,res)=>{
             },
             isSubscribed:{
                 $cond: {
-                    if:{$in:[req.user._id,'$subscribers.subscriber']},
+                    if:{$in:[req.user?._id,'$subscribers.subscriber']},
                     then:true,else:false
                 }
             }
