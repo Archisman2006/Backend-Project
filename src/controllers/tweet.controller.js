@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asynchandler } from "../utils/asyncHandler.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
+import { Like } from "../models/like.model.js";
 
 const createTweet=asynchandler(async (req,res)=>{
     const {content}=req.body;
@@ -16,6 +17,53 @@ const createTweet=asynchandler(async (req,res)=>{
     return res.status(200).json(
         new ApiResponse(200,tweet,"Tweet successfully published")
     );
+})
+const viewTweet=asynchandler(async (req,res)=>{
+    const {tweetId}=req.params;
+        const pipeline=[
+            {
+                $match:{
+                    _id:new mongoose.Types.ObjectId(tweetId)
+                }
+            },{
+                $lookup:{
+                    from:'users',
+                    localField:'owner',
+                    foreignField:'_id',
+                    as:'owner',
+                    pipeline:[
+                        {
+                            $project:{
+                                _id:1,
+                                username:1,
+                                fullName:1,
+                                avatar:1
+                            }
+                        }
+                    ]
+                }
+            },{
+                $addFields:{
+                    owner:{$first:'$owner'}
+                }
+            },{
+                $project:{
+                    _id:1,
+                    content:1,
+                    image:1,
+                    owner:1,
+                    createdAt:1,
+                    updatedAt:1,
+                }
+            }
+        ]
+        const [tweet]=await Tweet.aggregate(pipeline);
+        const likesCount=await Like.countDocuments({tweet:tweetId});
+        const isLikedByMe=(req.user?
+            await Like.exists({owner:req.user._id,tweet:tweetId}):false);
+        return res.status(200).json(
+            new ApiResponse(200,{tweet,likesCount,isLikedByMe},"Tweet retrieved successfully")
+        );
 })
 const getAllTweets=asynchandler(async (req,res)=>{
     const {page=1,limit=10,query,sortType="desc",userId}=req.query;
@@ -119,4 +167,4 @@ const deleteTweet=asynchandler(async (req,res)=>{
     )
 }) 
 // TODO: add getTweetById controller
-export {createTweet,getAllTweets,updateTweet,deleteTweet}
+export {createTweet,getAllTweets,viewTweet,updateTweet,deleteTweet}
