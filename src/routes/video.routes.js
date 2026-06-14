@@ -3,7 +3,7 @@ import {getAllVideos,publishVideo,getVideoByID,
     watchVideo,updateVideo,deleteVideo,
     searchVideos
 } from '../controllers/video.controller.js'
-import { VerifyJWT } from "../middlewares/auth.middleware.js";
+import { OptionalVerifyJWT, VerifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 const router=Router();
 router
@@ -24,8 +24,8 @@ router
 router.route("/search").get(searchVideos)
 router
 .route("/:videoId")
-.get(getVideoByID)
-.post(watchVideo)
+.get(OptionalVerifyJWT,getVideoByID)
+.post(OptionalVerifyJWT,watchVideo)
 .delete(VerifyJWT,deleteVideo)
 .patch(VerifyJWT,upload.single("thumbnail"),updateVideo)
 export default router

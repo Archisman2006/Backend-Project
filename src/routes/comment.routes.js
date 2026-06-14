@@ -2,18 +2,17 @@ import {
     getVideoComments,addVideoComment,addTweetComment,updateVideoComment,deleteVideoComment,
     updateTweetComment,deleteTweetComment,getTweetComments
 } from '../controllers/comment.controller.js'
-import { VerifyJWT } from '../middlewares/auth.middleware.js'
+import { OptionalVerifyJWT, VerifyJWT } from '../middlewares/auth.middleware.js'
 import { Router } from 'express';
 const router=Router();
-router.use(VerifyJWT)
-router.route('/videos/:videoId').get(getVideoComments)
-.post(addVideoComment)
+router.route('/videos/:videoId').get(OptionalVerifyJWT,getVideoComments)
+.post(VerifyJWT,addVideoComment)
 router.route('/videos/:commentId')
-.patch(updateVideoComment)
-.delete(deleteVideoComment)
-router.route('/tweets/:tweetId').post(addTweetComment)
-.get(getTweetComments)
+.patch(VerifyJWT,updateVideoComment)
+.delete(VerifyJWT,deleteVideoComment)
+router.route('/tweets/:tweetId').post(VerifyJWT,addTweetComment)
+.get(OptionalVerifyJWT,getTweetComments)
 router.route('/tweets/:commentId')
-.patch(updateTweetComment)
-.delete(deleteTweetComment)
+.patch(VerifyJWT,updateTweetComment)
+.delete(VerifyJWT,deleteTweetComment)
 export default router
