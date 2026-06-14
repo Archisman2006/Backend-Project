@@ -1,11 +1,13 @@
 import mongoose from 'mongoose'
 import {Video} from '../models/video.models.js'
 import {User} from '../models/user.models.js'
+import {Like} from '../models/like.model.js'
 import { asynchandler } from '../utils/asyncHandler.js'
 import {ApiResponse} from '../utils/ApiResponse.js'
 import {ApiError} from '../utils/ApiError.js'
 import { deleteFromCloudinary, uploadOnCloudinary } from '../utils/cloudinary.js'
 import { VideoView } from '../models/videoviews.model.js'
+import { Comment } from '../models/comment.model.js'
 const getAllVideos=asynchandler(async (req,res)=>{
     const {page=1,limit=10,query,sortBy="createdAt",sortType="desc",userId}=req.query;
     const parsedPage=Math.max(parseInt(page,10)|| 1,1)
@@ -121,8 +123,9 @@ const searchVideos=asynchandler(async (req,res)=>{
 const publishVideo=asynchandler(async (req,res)=>{
     const {title,description}=req.body;
     if(!title) throw new ApiError(400,"Title is required");
+    console.log(req?.files);
     const videoFile_localpath=req.files?.videoFile?.[0]?.path
-    if(!videoFile_localpath) throw new ApiError(401,"Video File is Missing");
+    if(!videoFile_localpath) throw new ApiError(400,"Video File is Missing");
     const response=await uploadOnCloudinary(videoFile_localpath,{
     resource_type: "video", // Cloudinary treats it as a video
     eager: [
@@ -160,28 +163,79 @@ const getVideoByID=asynchandler(async (req,res)=>{
 })
 const watchVideo=asynchandler(async (req,res)=>{
     const {videoId}=req.params;
+    console.log("f1");
     if(!mongoose.Types.ObjectId.isValid(videoId))
         throw new ApiError(400, "Invalid video ID");
     const video=await Video.findById(videoId);
     if(!video) throw new ApiError(400,"This Video Isn't Available");
     const result=await VideoView.updateOne(
-        {viewer:req.user._id,video:videoId},
-        {$setOnInsert:{viewer:req.user._id,video:videoId}},{upsert:true}
+        {viewer:req.user?._id,video:videoId},
+        {$setOnInsert:{viewer:req.user?._id,video:videoId}},{upsert:true}
     )
     let updatedVideo=video;
     const viewedNow=(result.upsertedCount === 1)
     if (viewedNow) {
         updatedVideo=await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } },{new:true})
     }
-    req.user.watchHistory = req.user.watchHistory.filter(
-        (id) => id.toString() !== videoId.toString()
-    );
-    req.user.watchHistory.unshift(videoId);
-    await req.user.save({validateBeforeSave:false})
+    if(req.user){
+        await User.findByIdAndUpdate(
+            req.user._id,{
+                $pull: { watchHistory: videoId },
+            }
+    )
+        await User.findByIdAndUpdate(
+            req.user._id,{
+                $push: {
+                    watchHistory: {
+                        $each: [videoId],
+                        $position: 0,
+                    },
+                },
+            }
+        )   
+    }
+    const videoPipeline = [
+        { $match: { _id: new mongoose.Types.ObjectId(videoId) } },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'owner',
+                foreignField: '_id',
+                as: 'owner',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $addFields: {
+                owner: {
+                    $first: '$owner',
+                },
+            },
+        }
+    ]
+    const [videoWithOwner] = await Video.aggregate(videoPipeline)
+    if (videoWithOwner) {
+        updatedVideo = videoWithOwner
+    }
+    const likesCount = await Like.countDocuments({ video: video._id })
+    const isLikedByMe = req.user
+        ? await Like.exists({ owner: req.user._id, video: video._id })
+        : false
+    const commentsCount= await Comment.countDocuments({video:video._id});
     return res
     .status(200)
     .json(
-        new ApiResponse(200,{viewedNow,updatedVideo},"viewed successfully")
+        new ApiResponse(200,{updatedVideo,viewedNow,likesCount,
+            isLikedByMe:Boolean(isLikedByMe),commentsCount},"viewed successfully")
     )
 })
 const updateVideo=asynchandler(async (req,res)=>{
