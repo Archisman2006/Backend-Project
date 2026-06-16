@@ -83,6 +83,7 @@ const getLikedVideos=asynchandler(async (req,res)=>{
     const pipeline= [
         {
             $match:{
+                video:{$ne:null},
                 owner: req.user._id
             }
         },{

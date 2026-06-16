@@ -14,10 +14,12 @@ const getChannelVideos=asynchandler(async (req,res)=>{
     const parsedLimit=Math.min(Math.max(parseInt(limit,10) || 10,1),50)
     const channel=await User.findOne({username});
     if(!channel) throw new ApiError(404,"Channel not found")
+    const isOwner=(req.user?._id.toString()===channel._id.toString());
     const pipeline=[
         {
             $match:{
-                owner:new mongoose.Types.ObjectId(channel._id)
+                owner:channel._id,
+                ...(isOwner?{}:{isPublished:true})
             }
         },{
             $lookup:{
@@ -46,12 +48,11 @@ const getChannelVideos=asynchandler(async (req,res)=>{
                 title:1,
                 duration:1,
                 views:1,
-                owner:1
+                owner:1,
+                createdAt:1
             }
         }
     ]
-    const isOwner=(req.user?._id.toString()===channel._id.toString());
-    if(!isOwner) pipeline.push({$match:{isPublished:true}})
     const aggregate=Video.aggregate(pipeline);
     const videos=await Video.aggregatePaginate(aggregate,{
         page:parsedPage,limit:parsedLimit
@@ -99,7 +100,8 @@ const getChannelTweets=asynchandler(async (req,res)=>{
                 _id:1,
                 content:1,
                 image:1,
-                owner:1
+                owner:1,
+                createdAt:1
             }
         }
     ]
@@ -151,7 +153,8 @@ const getChannelPlaylists=asynchandler(async (req,res)=>{
                 name:1,
                 description:1,
                 videos:1,
-                owner:1
+                owner:1,
+                createdAt:1
             }
         }
     ]

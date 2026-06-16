@@ -76,10 +76,28 @@ const getPlaylistById=asynchandler(async (req,res)=>{
                     },
                     {
                         $project: {
-                            videoFile: 1, thumbnail: 1, title: 1, duration: 1, views: 1, owner: 1
+                            videoFile: 1, thumbnail: 1, title: 1, duration: 1, views: 1, owner: 1, createdAt:1
                         }
                     }
                 ]
+            }
+        },{
+            $lookup:{
+                from:'users',
+                localField:'owner',
+                foreignField:'_id',
+                as:'owner',
+                pipeline:[{
+                    $project:{
+                        username:1,
+                        fullName:1,
+                        avatar:1    
+                    }}
+                ]
+            }
+        },{
+            $addFields:{
+                owner:{$first:'$owner'}
             }
         },
         {
@@ -145,8 +163,11 @@ const getAllPlaylists=asynchandler(async (req,res)=>{
             $project:{
                 name:1,
                 owner:1,
+                videos:1,
+                description:1,
                 visibility:1,
-                owner:1
+                owner:1,
+                createdAt:1
             }
         }
     ]

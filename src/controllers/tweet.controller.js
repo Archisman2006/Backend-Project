@@ -6,6 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asynchandler } from "../utils/asyncHandler.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Like } from "../models/like.model.js";
+import { Comment } from "../models/comment.model.js";
 
 const createTweet=asynchandler(async (req,res)=>{
     const {content}=req.body;
@@ -58,11 +59,12 @@ const viewTweet=asynchandler(async (req,res)=>{
             }
         ]
         const [tweet]=await Tweet.aggregate(pipeline);
+        const commentsCount=await Comment.countDocuments({tweet:tweetId});
         const likesCount=await Like.countDocuments({tweet:tweetId});
         const isLikedByMe=(req.user?
             await Like.exists({owner:req.user._id,tweet:tweetId}):false);
         return res.status(200).json(
-            new ApiResponse(200,{tweet,likesCount,isLikedByMe},"Tweet retrieved successfully")
+            new ApiResponse(200,{tweet,likesCount,isLikedByMe,commentsCount},"Tweet retrieved successfully")
         );
 })
 const getAllTweets=asynchandler(async (req,res)=>{
@@ -94,7 +96,8 @@ const getAllTweets=asynchandler(async (req,res)=>{
                     {
                         $project:{
                             username:1,
-                            avatar:1
+                            avatar:1,
+                            fullName:1,
                         }
                     }
                 ]
@@ -110,6 +113,7 @@ const getAllTweets=asynchandler(async (req,res)=>{
                 content:1,
                 image:1,
                 owner:1,
+                createdAt:1,
             }
         }
     ]
