@@ -3,7 +3,6 @@ import { ApiError } from "../utils/ApiError.js";
 import { asynchandler } from "../utils/asyncHandler.js";
 import jwt from 'jsonwebtoken'
 export const VerifyJWT=asynchandler(async (req,res,next)=>{
-    console.log("inside auth middleware")
     try{
         const token=
     req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ","")
@@ -23,7 +22,6 @@ export const VerifyJWT=asynchandler(async (req,res,next)=>{
     }
 });
 export const OptionalVerifyJWT=asynchandler(async (req,res,next)=>{
-    console.log("inside optional auth middleware")
     try {
         const token=
     req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ","")
