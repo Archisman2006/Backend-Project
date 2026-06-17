@@ -242,12 +242,12 @@ const updateVideo=asynchandler(async (req,res)=>{
     const {videoId}=req.params;
     const {title,description,isPublished}=req.body;
     const updateData = { title, description, isPublished };
+    if(!title) throw new ApiError(401,"title is required")
     if(req.file){
         const thumbnail=await uploadOnCloudinary(req.file.path)
         if(!thumbnail) throw new ApiError(401,"Thumbnail upload failed")
         updateData.thumbnail=thumbnail.url
     }
-    if(!title) throw new ApiError(401,"title is required")
     const video=await Video.findByIdAndUpdate(
         videoId,
         {
