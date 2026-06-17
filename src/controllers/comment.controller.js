@@ -7,6 +7,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { Tweet } from '../models/tweet.model.js';
 const getVideoComments=asynchandler(async (req,res)=>{
     const { videoId } = req.params;
+    const userId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null;
     const { page = 1, limit = 10, query, sortBy = "createdAt", sortType = "desc" } = req.query;
     if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new ApiError(400, "Invalid video id");
@@ -68,9 +69,34 @@ const getVideoComments=asynchandler(async (req,res)=>{
                 as:"likesMeta"
             }
         },{
+            $lookup:{
+                from:'likes',
+                let:{commentId:'$_id'},
+                pipeline:[
+                    {
+                        $match:{
+                            $expr: {
+                                $and: [
+                                    {$eq:["$comment","$$commentId"]},
+                                    {$eq:["$owner", userId]}
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as:"isLiked"
+            }
+        },{
             $addFields:{
                 likesCount:{
                     $ifNull:[{$first:"$likesMeta.count"},0]
+                },
+                isLikedByMe:{
+                    $cond: {
+                        if: { $gt: [ { $size: "$isLiked" }, 0 ] },
+                        then: true,
+                        else: false
+                    }
                 }
             }
         },{
@@ -83,6 +109,7 @@ const getVideoComments=asynchandler(async (req,res)=>{
                 owner:1,
                 isEdited:1,
                 likesCount:1,
+                isLikedByMe:1,
                 createdAt:1,
                 updatedAt:1
             }
@@ -151,6 +178,7 @@ const deleteVideoComment=asynchandler(async (req,res)=>{
 })
 const getTweetComments=asynchandler(async(req,res)=>{
     const { tweetId } = req.params;
+    const userId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null;
     const { page = 1, limit = 10, query, sortType = "desc" } = req.query;
     if (!mongoose.Types.ObjectId.isValid(tweetId)) {
         throw new ApiError(400, "Invalid tweet id");
@@ -210,9 +238,34 @@ const getTweetComments=asynchandler(async(req,res)=>{
                 as:"likesMeta"
             }
         },{
+            $lookup:{
+                from:'likes',
+                let:{commentId:'$_id'},
+                pipeline:[
+                    {
+                        $match:{
+                            $expr: {
+                                $and: [
+                                    {$eq:["$comment","$$commentId"]},
+                                    {$eq:["$owner", userId]}
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as:"isLiked"
+            }
+        },{
             $addFields:{
                 likesCount:{
                     $ifNull:[{$first:"$likesMeta.count"},0]
+                },
+                isLikedByMe:{
+                    $cond: {
+                        if: { $gt: [ { $size: "$isLiked" }, 0 ] },
+                        then: true,
+                        else: false
+                    }
                 }
             }
         },{
@@ -225,6 +278,7 @@ const getTweetComments=asynchandler(async(req,res)=>{
                 owner:1,
                 isEdited:1,
                 likesCount:1,
+                isLikedByMe:1,
                 createdAt:1,
                 updatedAt:1
             }
