@@ -123,7 +123,8 @@ const getLikedVideos=asynchandler(async (req,res)=>{
                             title:1,
                             description:1,
                             views:1,
-                            owner:1
+                            owner:1,
+                            createdAt:1
                         }
                     }
                 ]
