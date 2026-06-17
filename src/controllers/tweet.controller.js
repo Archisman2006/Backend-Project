@@ -10,7 +10,7 @@ import { Comment } from "../models/comment.model.js";
 
 const createTweet=asynchandler(async (req,res)=>{
     const {content}=req.body;
-    const image_localPath=req?.file.path;
+    const image_localPath=req?.file?.path;
     if(!content) throw new ApiError(401,"empty content provided");
     const image=(image_localPath==null)?null:await uploadOnCloudinary(image_localPath);
     const tweet=await Tweet.create({owner:req.user._id,content,image:image?.url});
@@ -133,7 +133,7 @@ const updateTweet=asynchandler(async (req,res)=>{
     const {content}=req.body;
     const updateData={content}
     if(req.file){
-        const image=uploadOnCloudinary(req.file.path);
+        const image=await uploadOnCloudinary(req.file.path);
         if(!image) throw new ApiError(400,"New Image could not be uploaded to cloudinary");
         updateData.image=image.url;
     }
