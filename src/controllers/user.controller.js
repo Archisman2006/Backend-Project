@@ -298,10 +298,9 @@ const updateCoverImage=asynchandler(async (req,res)=>{
     )
 })
 const getChannelProfile=asynchandler(async (req,res)=>{
-    console.log("inside getChannelProfile controller")
     const {username}=req.params
     if(!username) throw new ApiError(401,"username not provided");
-    const channel=await User.aggregate([{
+    const [channel]=await User.aggregate([{
         $match:{username:username}
     },{
         $lookup:{
@@ -340,7 +339,8 @@ const getChannelProfile=asynchandler(async (req,res)=>{
             coverImage:1,
             subscribersCount:1,
             subscribedToCount:1,
-            isSubscribed:1
+            isSubscribed:1,
+            createdAt:1
         }
     }
     ]
