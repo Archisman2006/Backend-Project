@@ -221,6 +221,12 @@ const getChannelStats=asynchandler(async (req,res)=>{
                 },
                 totalLikes:{
                     $sum:'$videos.likes'
+                },
+                isSubscribed:{
+                    $cond: {
+                        if:{$in:[req.user?._id,'$subscribers.subscriber']},
+                        then:true,else:false
+                    }
                 }
             }
         },{
@@ -232,11 +238,12 @@ const getChannelStats=asynchandler(async (req,res)=>{
                 totalSubscribers:1,
                 totalLikes:1,
                 totalViews:1,
-                totalVideos:1
+                totalVideos:1,
+                isSubscribed:1
             }
         }
     ]
-    const stats=await User.aggregate(pipeline);
+    const [stats]=await User.aggregate(pipeline);
     return res.status(200).json(
         new ApiResponse(200,stats,"channel statistics successfully retrieved")
     )
