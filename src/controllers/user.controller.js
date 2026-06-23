@@ -92,7 +92,6 @@ const resendVerificationCode=asynchandler(async (req,res)=>{
 })
 const loginUser=asynchandler(async (req,res)=>{
     // get data from req.body
-    //TODO: use single field named identifier instead of email and password.
     const {identifier,password}=req.body;
     if(!identifier) throw new ApiError(400,"Either email or username is required");
     const user=await User.findOne({$or:[
@@ -110,7 +109,7 @@ const loginUser=asynchandler(async (req,res)=>{
     const loggedInUser=await User.findById(user._id)
     .select("-password -refreshToken");
     const options={
-        httpOnly: true,secure:true
+        httpOnly: true,secure:true,sameSite:'none'
     };
     return res.status(200)
     .cookie("accessToken",accessToken,options)
