@@ -11,6 +11,7 @@ connectDB().then(()=>{
 .catch((error)=>{
     console.log("mongodb connection failed. 2",error);
 })
+export default app;
 
 
 
