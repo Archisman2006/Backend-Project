@@ -140,7 +140,7 @@ const publishVideo=asynchandler(async (req,res)=>{
     if(req.files && Array.isArray(req.files.thumbnail) && req.files.thumbnail.length>0)
         thumbnail_localpath=req.files?.thumbnail?.[0]?.path;
     const thumbnail=(thumbnail_localpath==null)?null:await uploadOnCloudinary(thumbnail_localpath);
-    const video= await Video.create({videoFile:mp4Url,streamingUrl:hlsUrl,thumbnail:thumbnail?.url,
+    const video= await Video.create({videoFile:mp4Url,streamingUrl:hlsUrl,thumbnail:thumbnail?.secure_url,
         title,description,duration:response.duration,owner:new mongoose.Types.ObjectId(req.user._id)});
     if(!video) throw new ApiError(500,'Video Upload Failed.');
     return res.
@@ -246,7 +246,7 @@ const updateVideo=asynchandler(async (req,res)=>{
     if(req.file){
         const thumbnail=await uploadOnCloudinary(req.file.path)
         if(!thumbnail) throw new ApiError(401,"Thumbnail upload failed")
-        updateData.thumbnail=thumbnail.url
+        updateData.thumbnail=thumbnail.secure_url
     }
     const video=await Video.findByIdAndUpdate(
         videoId,

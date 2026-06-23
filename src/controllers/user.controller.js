@@ -42,7 +42,7 @@ const registerUser=asynchandler(async (req,res)=>{
     const code=Math.floor(100000+Math.random()*900000).toString();
     const expiry = new Date(Date.now() + VERIFICATION_CODE_EXPIRY_MS);
     //create user object
-    const user=await User.create({fullName,avatar:avatar.url,coverImage:coverImage?.url||"",email,
+    const user=await User.create({fullName,avatar:avatar.secure_url,coverImage:coverImage?.secure_url||"",email,
         password,username:username.toLowerCase(),verificationCode:code,isVerified:false,
     verificationCodeExpiry:expiry});
     //remove password and refresh token field from response
@@ -265,7 +265,7 @@ const updateAvatar=asynchandler(async (req,res)=>{
     const newUser=await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set:{avatar:avatar.url}
+            $set:{avatar:avatar.secure_url}
         },
         {new:true}
     ).select("-password -refreshToken")
@@ -284,7 +284,7 @@ const updateCoverImage=asynchandler(async (req,res)=>{
     const newUser= await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set:{coverImage:coverImage.url}
+            $set:{coverImage:coverImage.secure_url}
         },
         {new:true}
     ).select("-password -refreshToken")
