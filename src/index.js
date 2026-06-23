@@ -4,9 +4,13 @@ import { app } from './app.js';
 //require('dotenv').config({path:'./env'});
 import { connectDB } from "./db/index.js";
 connectDB().then(()=>{
-    app.listen(process.env.PORT,()=>{
-        console.log("Server is running on port: "+process.env.PORT);
-    })
+    if (!process.env.VERCEL) {
+        app.listen(process.env.PORT || 8000,()=>{
+            console.log("Server is running on port: "+(process.env.PORT || 8000));
+        })
+    } else {
+        console.log("Connected to MongoDB (Serverless Mode)");
+    }
 })
 .catch((error)=>{
     console.log("mongodb connection failed. 2",error);
