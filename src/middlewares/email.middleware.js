@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 import dotenv from 'dotenv';
-import { Verification_Email_Template, Welcome_Email_Template } from '../utils/emailTemplate.js';
+import { Verification_Email_Template, Welcome_Email_Template,reset_password_email_template } from '../utils/emailTemplate.js';
 dotenv.config();
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -37,6 +37,18 @@ export const sendWelcomeEmail=async(email,name)=>{
     })
     }
     catch(error){
+        console.log(error);
+    }
+}
+export const sendResetPasswordLink=async(email,token)=>{
+    try {
+        await transporter.sendMail({
+            from:`"Archisman Das" <${process.env.SMTP_USER}>`,
+            to:email,
+            subject:"Password Reset Request",
+            html:reset_password_email_template.replaceAll('{link}',`http://localhost:5173/reset-password/${token}`)
+        })
+    } catch (error) {
         console.log(error);
     }
 }
