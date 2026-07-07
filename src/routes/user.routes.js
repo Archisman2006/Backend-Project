@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { changeCurrentPassword, getChannelProfile, getCurrentUser, 
+import { getChannelProfile, getCurrentUser, 
     getWatchHistory, loginUser, logoutUser, refreshAccessToken, 
     registerUser, resendVerificationCode, updateAccountDetails, 
     updateAvatar, updateCoverImage, verifyEmail,clearWatchHistory,removeVideoFromWatchHistory 
-    ,getAllUsers,googleLogin,googleRegister,checkUsername} 
+    ,getAllUsers,googleLogin,googleRegister,checkUsername
+    ,generateResetPasswordToken,resetPassword} 
     from "../controllers/user.controller.js";
 import {upload} from '../middlewares/multer.middleware.js'
 import { OptionalVerifyJWT, VerifyJWT } from "../middlewares/auth.middleware.js";
@@ -38,9 +39,6 @@ router.route("/register").post(
     router.route("/refresh-token").post(
         refreshAccessToken
     )
-    router.route("/change-password").post(
-        VerifyJWT,changeCurrentPassword
-    )
     router.route("/current-user").get(
         OptionalVerifyJWT,getCurrentUser
     )
@@ -66,4 +64,6 @@ router.route("/register").post(
     router.route("/google-login").post(googleLogin)
     router.route("/google-register").post(googleRegister)
     router.route("/check-username/:username").get(checkUsername)
+    router.route("/generate-reset-password-token").post(generateResetPasswordToken)
+    router.route("/reset-password").post(resetPassword)
 export default router;

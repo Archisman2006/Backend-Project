@@ -5,8 +5,9 @@ import {deleteFromCloudinary, uploadOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
-import { sendVerificationCode, sendWelcomeEmail } from '../middlewares/email.middleware.js'
-import { VERIFICATION_CODE_EXPIRY_MS } from '../constants.js'
+import crypto from 'crypto'
+import { sendVerificationCode, sendWelcomeEmail,sendResetPasswordLink } from '../middlewares/email.middleware.js'
+import { VERIFICATION_CODE_EXPIRY_MS,RESET_PASSWORD_TOKEN_EXPIRY_MS } from '../constants.js'
 const getAccessAndRefreshTokens=async (userid,user)=>{
     //const user=User.findById(userid);
     const accessToken=user.generateAccessToken();
@@ -124,6 +125,41 @@ const loginUser=asynchandler(async (req,res)=>{
         )
     )
 })
+const generateResetPasswordToken=asynchandler(async (req,res)=>{
+    const {email}=req.body;
+    const user=await User.findOne({email});
+    if(!user){
+        return res.status(200).json(
+        new ApiResponse(200,{},"...")
+    );
+    }
+    const token=crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken=token;
+    user.resetPasswordTokenExpiry=new Date(Date.now()+RESET_PASSWORD_TOKEN_EXPIRY_MS);
+    await user.save({validateBeforeSave:false});
+    sendResetPasswordLink(email,token);
+    return res.status(200).json(
+        new ApiResponse(200,{},"...")
+    );
+})
+const resetPassword=asynchandler(async (req,res)=>{
+    const {token,newPassword}=req.body;
+    if(!token) return new ApiError(403,"session expired");
+    if(!newPassword || newPassword.trim()==='') return ApiError(400,"Password is required");
+    const user=await User.findOne({resetPasswordToken:token});
+    console.log(user);
+    if(!user) return new ApiError(400,"Token invalid or already used");
+    if(user.resetPasswordTokenExpiry && user.resetPasswordTokenExpiry<new Date()){
+        return new ApiError(400,"token is expired. Please Request again.");
+    }
+    user.resetPasswordToken=null;
+    user.resetPasswordTokenExpiry=null;
+    user.password=newPassword;
+    await user.save({validateBeforeSave:false});
+    return res.status(200).json(
+        new ApiResponse(200,{},"password changed successfully. Log in with new password.")
+    )
+})
 const googleLogin=asynchandler(async (req,res)=>{
     const {token}=req.body;
     if(!token) throw new ApiError(400,"Google credential token is required");
@@ -204,7 +240,6 @@ const googleLogin=asynchandler(async (req,res)=>{
             )
         );
 })
-
 const googleRegister=asynchandler(async (req,res)=>{
     const { username, tempToken } = req.body;
 
@@ -282,7 +317,6 @@ const googleRegister=asynchandler(async (req,res)=>{
             )
         );
 })
-
 const checkUsername = asynchandler(async (req, res) => {
     const { username } = req.params;
     if (!username || username.trim() === "") {
@@ -298,7 +332,6 @@ const checkUsername = asynchandler(async (req, res) => {
         )
     );
 });
-
 const logoutUser=asynchandler(async (req,res)=>{
     await User.findByIdAndUpdate(
         req.user._id,
@@ -383,20 +416,6 @@ const refreshAccessToken=asynchandler(async (req,res)=>{
             "Session restored successfully."
         )
     )
-})
-const changeCurrentPassword=asynchandler(async (req,res)=>{
-    const {oldPassword,newPassword}=req.body;
-    const user=await User.findById(req.user._id);
-    const isPasswordCorrect=await user.isPasswordCorrect(oldPassword)
-    if(!isPasswordCorrect){
-        throw new ApiError(401,"Password is wrong");
-    }
-    user.password=newPassword;
-    await user.save({validateBeforeSave:false});
-    return res.status(200)
-    .json(new ApiResponse(
-        200,{},"Password Changed successfully."
-    ));
 })
 const getCurrentUser=asynchandler(async (req,res)=>{
     if(!req.user){
@@ -614,9 +633,8 @@ const removeVideoFromWatchHistory=asynchandler(async (req,res)=>{
         new ApiResponse(200,{},"video removed from user watch history")
     )
 })
-export {registerUser,loginUser,logoutUser,refreshAccessToken,
-    changeCurrentPassword,getCurrentUser,updateAccountDetails,updateAvatar,
+export {registerUser,loginUser,logoutUser,refreshAccessToken,getCurrentUser,updateAccountDetails,updateAvatar,
     updateCoverImage,getChannelProfile,getWatchHistory,verifyEmail,
     resendVerificationCode,clearWatchHistory,removeVideoFromWatchHistory,getAllUsers,
-    googleLogin,googleRegister,checkUsername
+    googleLogin,googleRegister,checkUsername,generateResetPasswordToken,resetPassword
 }
