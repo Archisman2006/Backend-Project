@@ -46,7 +46,7 @@ export const sendResetPasswordLink=async(email,token)=>{
             from:`"Archisman Das" <${process.env.SMTP_USER}>`,
             to:email,
             subject:"Password Reset Request",
-            html:reset_password_email_template.replaceAll('{link}',`http://localhost:5173/reset-password/${token}`)
+            html:reset_password_email_template.replaceAll('{link}',`https://justtube.vercel.app/reset-password/${token}`)
         })
     } catch (error) {
         console.log(error);
