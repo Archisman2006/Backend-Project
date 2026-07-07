@@ -20,7 +20,7 @@ const registerUser=asynchandler(async (req,res)=>{
     // get user details from frontend
     const {username,email,fullName,password}=body
     //validation
-    if([username,email,fullName].some((i)=>i?.trim()==="")) throw new ApiError(400,"All fields are Required");
+    if([username,email,fullName,password].some((i)=>i?.trim()==="")) throw new ApiError(400,"All fields are Required");
     //check if user already exists
     const userExists=await User.findOne({
         $or:[{username},{email}]
@@ -124,6 +124,181 @@ const loginUser=asynchandler(async (req,res)=>{
         )
     )
 })
+const googleLogin=asynchandler(async (req,res)=>{
+    const {token}=req.body;
+    if(!token) throw new ApiError(400,"Google credential token is required");
+    
+    const response= await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
+    const ticket = await response.json();
+    if(!response.ok || ticket.error || ticket.error_description){
+        throw new ApiError(400,ticket.error_description || ticket.error || "invalid Google token");
+    }
+
+    //client ID safety check
+    if (ticket.aud !== process.env.GOOGLE_CLIENT_ID) {
+        throw new ApiError(400, "Google token client ID mismatch");
+    }
+
+    const { sub: googleId, email, email_verified, name: fullName, picture: avatar } = ticket;
+    const isEmailVerified = email_verified === true || email_verified === "true";
+
+    // Check if user exists by email
+    let user = await User.findOne({ email });
+
+    if (!user) {
+        // If email does not exist: generate a short-lived temporary JWT
+        const tempToken = jwt.sign(
+            { email, googleId, fullName, avatar },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    tempToken,
+                    email,
+                    fullName,
+                    avatar,
+                    usernameRequired: true
+                },
+                "Google authenticated. Username required to complete signup."
+            )
+        );
+    }
+
+    // If email exists: check googleId
+    if (user.googleId) {
+        if (user.googleId !== googleId) {
+            throw new ApiError(400, "This email is registered using a different login/Google method.");
+        }
+    } else {
+        // If googleId is not set, verify Google email and link it
+        if (!isEmailVerified) {
+            throw new ApiError(400, "Google account email is not verified.");
+        }
+        user.googleId = googleId;
+        user.isVerified = true;
+        await user.save({ validateBeforeSave: false });
+    }
+
+    // Issue tokens and log in
+    const { accessToken, refreshToken } = await getAccessAndRefreshTokens(user._id, user);
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+    };
+
+    return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                { user: loggedInUser },
+                "User logged in successfully"
+            )
+        );
+})
+
+const googleRegister=asynchandler(async (req,res)=>{
+    const { username, tempToken } = req.body;
+
+    if (!username || username.trim() === "") {
+        throw new ApiError(400, "Username is required");
+    }
+    if (!tempToken) {
+        throw new ApiError(400, "Temporary registration token is required");
+    }
+
+    const cleanedUsername = username.trim().toLowerCase();
+
+    // Verify the temporary registration token
+    let decoded;
+    try {
+        decoded = jwt.verify(
+            tempToken,
+            process.env.ACCESS_TOKEN_SECRET
+        );
+    } catch (error) {
+        throw new ApiError(400, "Invalid or expired temporary registration token");
+    }
+
+    const { email, googleId, fullName, avatar } = decoded;
+
+    // Double check email/username uniqueness
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+        throw new ApiError(409, "User with this email already exists");
+    }
+
+    const usernameExists = await User.findOne({ username: cleanedUsername });
+    if (usernameExists) {
+        throw new ApiError(409, "Username is already taken");
+    }
+
+    // Create the user
+    const user = await User.create({
+        username: cleanedUsername,
+        email,
+        fullName,
+        avatar,
+        googleId,
+        isVerified: true
+    });
+
+    try {
+        await sendWelcomeEmail(user.email, user.fullName);
+    } catch (emailError) {
+        console.error("Failed to send welcome email:", emailError);
+    }
+
+    // Generate tokens and log in
+    const { accessToken, refreshToken } = await getAccessAndRefreshTokens(user._id, user);
+    const createdUser = await User.findById(user._id).select("-password -refreshToken");
+
+    if (!createdUser) {
+        throw new ApiError(500, "Google User registration failed");
+    }
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+    };
+
+    return res.status(201)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                201,
+                { user: createdUser },
+                "Google registration completed successfully"
+            )
+        );
+})
+
+const checkUsername = asynchandler(async (req, res) => {
+    const { username } = req.params;
+    if (!username || username.trim() === "") {
+        throw new ApiError(400, "Username is required");
+    }
+    const cleanedUsername = username.trim().toLowerCase();
+    const userExists = await User.findOne({ username: cleanedUsername });
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            { available: !userExists },
+            userExists ? "Username is already taken" : "Username is available"
+        )
+    );
+});
+
 const logoutUser=asynchandler(async (req,res)=>{
     await User.findByIdAndUpdate(
         req.user._id,
@@ -442,5 +617,6 @@ const removeVideoFromWatchHistory=asynchandler(async (req,res)=>{
 export {registerUser,loginUser,logoutUser,refreshAccessToken,
     changeCurrentPassword,getCurrentUser,updateAccountDetails,updateAvatar,
     updateCoverImage,getChannelProfile,getWatchHistory,verifyEmail,
-    resendVerificationCode,clearWatchHistory,removeVideoFromWatchHistory,getAllUsers
+    resendVerificationCode,clearWatchHistory,removeVideoFromWatchHistory,getAllUsers,
+    googleLogin,googleRegister,checkUsername
 }

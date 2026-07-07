@@ -3,7 +3,7 @@ import { changeCurrentPassword, getChannelProfile, getCurrentUser,
     getWatchHistory, loginUser, logoutUser, refreshAccessToken, 
     registerUser, resendVerificationCode, updateAccountDetails, 
     updateAvatar, updateCoverImage, verifyEmail,clearWatchHistory,removeVideoFromWatchHistory 
-    ,getAllUsers} 
+    ,getAllUsers,googleLogin,googleRegister,checkUsername} 
     from "../controllers/user.controller.js";
 import {upload} from '../middlewares/multer.middleware.js'
 import { OptionalVerifyJWT, VerifyJWT } from "../middlewares/auth.middleware.js";
@@ -63,4 +63,7 @@ router.route("/register").post(
     router.route("/history/:videoId").delete(
         VerifyJWT,removeVideoFromWatchHistory
     )
+    router.route("/google-login").post(googleLogin)
+    router.route("/google-register").post(googleRegister)
+    router.route("/check-username/:username").get(checkUsername)
 export default router;
